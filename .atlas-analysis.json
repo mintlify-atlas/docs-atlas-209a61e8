@@ -1,0 +1,144 @@
+{
+  "projectType": "saas",
+  "projectName": "AniDojo",
+  "projectDescription": "A full-stack anime tracking, discovery, and review platform with user profiles, lists, and community features.",
+  "theme": "aspen",
+  "primaryColor": "#B91C1C",
+  "lightColor": "#10B981",
+  "darkColor": "#7F1D1D",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/anime-search",
+              "features/user-profiles",
+              "features/lists-tracking",
+              "features/reviews",
+              "features/ai-discovery"
+            ]
+          },
+          {
+            "group": "Setup Guides",
+            "pages": [
+              "setup/supabase",
+              "setup/database",
+              "setup/storage",
+              "setup/authentication",
+              "setup/api-integration"
+            ]
+          },
+          {
+            "group": "User Guide",
+            "pages": [
+              "guides/browsing-anime",
+              "guides/creating-lists",
+              "guides/writing-reviews",
+              "guides/profile-management",
+              "guides/discovering-anime"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Anime API",
+            "pages": [
+              "api/anime/overview",
+              "api/anime/search",
+              "api/anime/top-anime",
+              "api/anime/seasonal"
+            ]
+          },
+          {
+            "group": "Database",
+            "pages": [
+              "api/database/schema",
+              "api/database/queries",
+              "api/database/types"
+            ]
+          },
+          {
+            "group": "Components",
+            "pages": [
+              "api/components/overview",
+              "api/components/search",
+              "api/components/navbar",
+              "api/components/theme"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Development",
+        "groups": [
+          {
+            "group": "Architecture",
+            "pages": [
+              "development/architecture",
+              "development/tech-stack",
+              "development/project-structure"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "deployment/vercel",
+              "deployment/environment-variables",
+              "deployment/migrations"
+            ]
+          },
+          {
+            "group": "Contributing",
+            "pages": [
+              "contributing/guidelines",
+              "contributing/code-style",
+              "contributing/testing"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Anime search and discovery powered by Jikan API",
+    "User authentication and profile management with Supabase",
+    "Personal anime lists with tracking and status management",
+    "Community reviews and ratings system",
+    "AI-powered anime recommendations",
+    "Real-time anime data from MyAnimeList",
+    "Customizable user profiles with statistics",
+    "Seasonal and trending anime browsing"
+  ],
+  "publicApiSurface": [
+    "searchAnime(query, page, limit)",
+    "getTopAnime(page, limit, filter)",
+    "getAnimeById(id)",
+    "getSeasonalAnime(year, season, limit)",
+    "getCurrentSeasonAnime(limit)",
+    "getAnimeEntries(userId)",
+    "upsertAnimeEntry(entry)",
+    "getReviews(animeId, userId, status, limit)",
+    "createReview(review)",
+    "updateReview(reviewId, updates)",
+    "deleteReview(reviewId)",
+    "getProfile(userId)",
+    "updateProfile(userId, updates)",
+    "uploadAvatar(file)",
+    "createCustomList(list)",
+    "addToList(listId, animeId)"
+  ]
+}
