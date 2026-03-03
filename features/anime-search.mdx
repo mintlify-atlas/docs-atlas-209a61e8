@@ -1,0 +1,278 @@
+---
+title: 'Anime Search & Browse'
+description: 'Discover and find anime using AniDojo powerful search features with real-time data from MyAnimeList'
+icon: 'magnifying-glass'
+---
+
+## Overview
+
+AniDojo's anime search feature provides instant access to over 50,000 anime titles from MyAnimeList through the Jikan API. Search by title, browse by category, or use advanced filters to find exactly what you're looking for.
+
+<Info>
+  The search system includes intelligent rate limiting, caching, and retry logic to ensure a smooth experience even with heavy usage.
+</Info>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Real-Time Search" icon="magnifying-glass">
+    Search across MyAnimeList's entire database with instant results and autocomplete suggestions.
+  </Card>
+  <Card title="Voice Search" icon="microphone">
+    Use voice commands to search for anime hands-free (supported browsers only).
+  </Card>
+  <Card title="Advanced Filters" icon="sliders">
+    Filter by genre, type, status, year, score, and more to narrow down results.
+  </Card>
+  <Card title="Multiple Views" icon="grid">
+    Switch between grid and list views to browse results your way.
+  </Card>
+</CardGroup>
+
+## How to Search
+
+<Steps>
+  <Step title="Navigate to Search">
+    Click "Search" in the main navigation or press `/` to open the search bar from anywhere.
+  </Step>
+  
+  <Step title="Enter Your Query">
+    Type an anime title, genre, or studio name. Results appear as you type.
+    
+    <Tip>
+      Try searching for:
+      - Specific titles: "Attack on Titan", "Demon Slayer"
+      - Genres: "Action", "Romance", "Slice of Life"
+      - Studios: "Ufotable", "Studio Ghibli"
+    </Tip>
+  </Step>
+  
+  <Step title="Apply Filters (Optional)">
+    Use quick filters or click "Advanced Filters" for more options:
+    
+    - **Type**: TV, Movie, OVA, ONA, Special
+    - **Status**: Airing, Finished, Upcoming
+    - **Year**: Filter by release year
+    - **Score Range**: Set minimum/maximum scores
+    - **Genres**: Select multiple genres to include
+    - **Sort By**: Score, Popularity, Title, Date
+  </Step>
+  
+  <Step title="Browse Results">
+    View anime details including:
+    - Cover art and title
+    - MAL score and rating
+    - Genre tags
+    - Type and episode count
+    - Brief synopsis
+  </Step>
+  
+  <Step title="Take Action">
+    From search results, you can:
+    - **View Details**: See full anime information
+    - **Add to List**: Quick-add to your watching/planning lists
+    - **Review**: Navigate to write a review
+  </Step>
+</Steps>
+
+## Search Features
+
+### Quick Filters
+
+Access common filters with a single click:
+
+```
+Type Filters: All | TV | Movie | OVA | ONA | Special
+Status: All | Airing | Finished | Upcoming  
+Year: Dropdown of recent years (2015-2024)
+```
+
+### Advanced Search Options
+
+Click "Advanced Search" to access additional filters:
+
+- **Genre Selection**: Choose from 40+ anime genres
+- **Score Range**: Slider to set minimum and maximum scores (0-10)
+- **Episode Range**: Filter by episode count
+- **Order/Sort**: Multiple sort options with ascending/descending
+
+<Note>
+  Advanced filters can be combined for highly specific searches. For example, filter for "Action + Fantasy movies from 2020-2023 with scores above 8.0."
+</Note>
+
+### Voice Search
+
+Supported on Chrome, Safari, and Edge:
+
+1. Click the microphone icon next to the search bar
+2. Speak your search query clearly
+3. Results appear automatically when you finish speaking
+
+<Tip>
+  Voice search works best with:
+  - Popular anime titles
+  - Genre names
+  - Studio names
+  - Simple search phrases
+</Tip>
+
+## Browse Features
+
+When no search is active, explore curated categories:
+
+### Recent Searches
+
+Your last 10 searches are saved locally for quick access. Click any previous search to instantly repeat it.
+
+### Trending Searches
+
+See what other users are searching for:
+- Attack on Titan
+- Demon Slayer
+- One Piece
+- Your Name
+- Studio Ghibli
+
+### Browse by Category
+
+<CardGroup cols={3}>
+  <Card title="Top Genres" icon="star">
+    - Action
+    - Drama
+    - Comedy
+    - Romance
+    - Adventure
+  </Card>
+  
+  <Card title="Popular Studios" icon="building">
+    - Studio Ghibli
+    - Ufotable
+    - Wit Studio
+    - Madhouse
+    - Bones
+  </Card>
+  
+  <Card title="By Year" icon="calendar">
+    Browse anime by release year from 2020-2024
+  </Card>
+</CardGroup>
+
+## View Modes
+
+### Grid View
+
+Compact card layout showing:
+- Large cover art
+- Title and genres
+- Score and type
+- Quick action buttons
+
+Ideal for browsing visually and comparing cover art.
+
+### List View
+
+Detailed row layout displaying:
+- Thumbnail image
+- Full title (English + Japanese)
+- Extended synopsis preview
+- Complete metadata (episodes, year, status)
+- Multiple genre tags
+
+Best for detailed comparison and reading synopses.
+
+## Search Tips
+
+<Tip>
+  **Finding Specific Anime**:
+  - Use English titles for better results ("Attack on Titan" vs "Shingeki no Kyojin")
+  - Try alternative spellings if you don't get results
+  - Use filters to narrow down similar titles
+</Tip>
+
+<Tip>
+  **Discovering New Anime**:
+  - Start with broad genre searches
+  - Sort by score to find hidden gems
+  - Use the "Include less popular" filter for unique finds
+</Tip>
+
+<Tip>
+  **Performance**:
+  - Search results are cached for 5 minutes
+  - Rate limiting prevents overwhelming the API
+  - Pagination loads 25 results at a time
+</Tip>
+
+## Technical Details
+
+### Data Source
+
+All anime data comes from the **Jikan API** (v4), an unofficial MyAnimeList API:
+- 50,000+ anime in database
+- Real-time updates from MyAnimeList
+- No API key required
+- Free to use
+
+### Rate Limiting
+
+AniDojo implements smart rate limiting:
+- Maximum 3 requests per second
+- Automatic retry with exponential backoff
+- 5-minute response caching
+- Queue system prevents request blocking
+
+### Performance Optimization
+
+```typescript
+// Example: Search with caching from ~/workspace/source/src/lib/animeApi.ts:242
+export async function searchAnime(
+  query: string, 
+  page: number = 1, 
+  limit: number = 20
+): Promise<JikanSearchResponse> {
+  const url = `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`;
+  return rateLimiter.call<JikanSearchResponse>(url);
+}
+```
+
+The rate limiter automatically handles:
+- Request queuing
+- Response caching
+- Retry logic
+- Error handling
+
+## Search Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `/` | Focus search bar |
+| `Enter` | Execute search |
+| `Esc` | Clear search |
+| `Tab` | Navigate results |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Add to Lists" icon="list" href="/features/lists-tracking">
+    Save anime you find to your personal lists
+  </Card>
+  <Card title="Write Reviews" icon="pen" href="/features/reviews">
+    Share your thoughts on anime you discover
+  </Card>
+  <Card title="AI Discovery" icon="sparkles" href="/features/ai-discovery">
+    Get personalized recommendations
+  </Card>
+  <Card title="User Profile" icon="user" href="/features/user-profiles">
+    Track your watching stats and preferences
+  </Card>
+</CardGroup>
+
+## Common Issues
+
+<Warning>
+  **"Too many requests" error**: The API has rate limits. Wait a moment and try again. AniDojo will automatically retry failed requests.
+</Warning>
+
+<Note>
+  **Missing images**: Some older anime may not have high-quality cover art in the MyAnimeList database. A placeholder will be shown instead.
+</Note>

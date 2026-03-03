@@ -1,0 +1,302 @@
+---
+title: Search Components
+description: GlobalSearch and AnimeSearch components for anime discovery
+---
+
+AniDojo provides two search components for different use cases: `GlobalSearch` for navbar integration with autocomplete, and `AnimeSearch` for full-page search results.
+
+## GlobalSearch
+
+A dropdown search component with autocomplete suggestions, keyboard navigation, and recent search history.
+
+### Import
+
+```tsx
+import GlobalSearch from '@/components/GlobalSearch';
+```
+
+### Props
+
+<ParamField path="className" type="string" default="''">
+  Optional CSS classes to apply to the search container
+</ParamField>
+
+### Features
+
+- **Autocomplete Suggestions**: Real-time anime suggestions from Jikan API
+- **Recent Search History**: Stores last 5 searches in localStorage
+- **Keyboard Navigation**: Arrow keys to navigate, Enter to select, Escape to close
+- **Keyboard Shortcut**: Press `/` anywhere to focus search
+- **Debounced Search**: 300ms debounce to reduce API calls
+- **Error Handling**: Rate limit detection and error states
+
+### Usage
+
+<CodeGroup>
+
+```tsx Navbar Integration
+import GlobalSearch from '@/components/GlobalSearch';
+
+export default function Navbar() {
+  return (
+    <nav>
+      <GlobalSearch className="w-48 lg:w-64" />
+    </nav>
+  );
+}
+```
+
+```tsx Standalone
+import GlobalSearch from '@/components/GlobalSearch';
+
+export default function SearchPage() {
+  return (
+    <div className="max-w-2xl mx-auto p-4">
+      <GlobalSearch className="w-full" />
+    </div>
+  );
+}
+```
+
+</CodeGroup>
+
+### Data Structures
+
+The component works with search suggestions from the Jikan API:
+
+```tsx
+interface SearchSuggestion {
+  mal_id: number;           // MyAnimeList ID
+  title: string;            // Original title
+  title_english?: string;   // English title (optional)
+  images: {
+    jpg: {
+      small_image_url: string;  // Thumbnail URL
+    };
+  };
+  type?: string;           // TV, Movie, OVA, etc.
+  year?: number;           // Release year
+}
+```
+
+### Keyboard Shortcuts
+
+<Tabs>
+  <Tab title="Global">
+    - `/` - Focus search input from anywhere
+    - `Escape` - Close suggestions and blur input
+  </Tab>
+  <Tab title="Within Dropdown">
+    - `ArrowDown` - Move to next suggestion
+    - `ArrowUp` - Move to previous suggestion
+    - `Enter` - Navigate to selected anime or search page
+  </Tab>
+</Tabs>
+
+### localStorage Keys
+
+The component uses localStorage for persistence:
+
+<ParamField path="searchHistory" type="string[]">
+  Array of recent search queries (max 5 items)
+</ParamField>
+
+### API Integration
+
+Searches are performed against the Jikan v4 API:
+
+```tsx
+const response = await fetch(
+  `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=5`
+);
+```
+
+**Rate Limiting**: The component detects 429 responses and displays "Rate limit exceeded" error.
+
+### Source Reference
+
+Source code: `~/workspace/source/src/components/GlobalSearch.tsx`
+
+---
+
+## AnimeSearch
+
+A full-page search component with grid results and pagination using the `useAnimeSearch` hook.
+
+### Import
+
+```tsx
+import AnimeSearch from '@/components/AnimeSearch';
+```
+
+### Props
+
+No props required - fully self-contained component.
+
+### Features
+
+- **Grid Layout**: Responsive grid (2-5 columns based on screen size)
+- **Pagination**: Previous/Next controls with page tracking
+- **Loading States**: Spinner indicator during searches
+- **Error Handling**: Error messages for failed requests
+- **Image Fallbacks**: SVG icons when cover art is unavailable
+- **Genre Tags**: Display up to 2 genres per anime
+
+### Usage
+
+<CodeGroup>
+
+```tsx Page Integration
+import AnimeSearch from '@/components/AnimeSearch';
+
+export default function SearchPage() {
+  return (
+    <main>
+      <AnimeSearch />
+    </main>
+  );
+}
+```
+
+```tsx Layout
+import AnimeSearch from '@/components/AnimeSearch';
+
+export default function SearchLayout() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header>Search Anime</header>
+      <AnimeSearch />
+      <footer>...</footer>
+    </div>
+  );
+}
+```
+
+</CodeGroup>
+
+### Hook Integration
+
+Uses the `useAnimeSearch` hook for data fetching:
+
+```tsx
+const { data: anime, loading, error, hasNextPage } = useAnimeSearch(query, page);
+```
+
+This hook is defined in `src/hooks/useAnime.ts` and provides automatic state management for search queries.
+
+### Data Format
+
+Works with the standardized `Anime` interface:
+
+```tsx
+interface Anime {
+  id: number;
+  title: string;
+  coverArt?: string;    // Cover image URL
+  year?: string;        // Release year
+  genres?: string[];    // Array of genre names
+}
+```
+
+### Styling Features
+
+Dynamic gradient backgrounds for cards without cover art:
+
+```tsx
+const getAnimeColor = (index: number) => {
+  const colors = [
+    'bg-gradient-to-br from-red-500 to-red-700',
+    'bg-gradient-to-br from-green-500 to-green-700',
+    'bg-gradient-to-br from-yellow-400 to-yellow-600',
+  ];
+  return colors[index % colors.length];
+};
+```
+
+### Responsive Grid
+
+```tsx
+<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+  {/* Anime cards */}
+</div>
+```
+
+Breakpoints:
+- Mobile: 2 columns
+- Small: 3 columns
+- Medium: 4 columns
+- Large: 5 columns
+
+### Source Reference
+
+Source code: `~/workspace/source/src/components/AnimeSearch.tsx`
+
+---
+
+## Common Search Patterns
+
+### Implementing Search in Custom Pages
+
+<CodeGroup>
+
+```tsx With GlobalSearch
+import GlobalSearch from '@/components/GlobalSearch';
+
+export default function CustomPage() {
+  return (
+    <div>
+      <h1>Find Your Anime</h1>
+      <GlobalSearch className="max-w-xl mx-auto" />
+    </div>
+  );
+}
+```
+
+```tsx With AnimeSearch
+import AnimeSearch from '@/components/AnimeSearch';
+
+export default function BrowsePage() {
+  return (
+    <div>
+      <h1>Browse Anime</h1>
+      <AnimeSearch />
+    </div>
+  );
+}
+```
+
+</CodeGroup>
+
+### Combining Both Components
+
+```tsx
+import GlobalSearch from '@/components/GlobalSearch';
+import AnimeSearch from '@/components/AnimeSearch';
+
+export default function SearchHub() {
+  return (
+    <div>
+      {/* Quick search in header */}
+      <header className="bg-ink p-4">
+        <GlobalSearch className="max-w-md mx-auto" />
+      </header>
+      
+      {/* Full search results */}
+      <main className="container mx-auto">
+        <AnimeSearch />
+      </main>
+    </div>
+  );
+}
+```
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Search API" href="/api/anime/search">
+    Learn about the searchAnime() API function
+  </Card>
+  <Card title="Navigation Components" href="/api/components/navbar">
+    Integrate search into navigation
+  </Card>
+</CardGroup>

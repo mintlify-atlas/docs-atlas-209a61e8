@@ -1,0 +1,590 @@
+---
+title: 'Project Structure'
+description: 'Detailed guide to AniDojo folder organization, file conventions, and code structure'
+---
+
+## Overview
+
+AniDojo follows Next.js 15 App Router conventions with a clean, organized structure that separates concerns and makes the codebase easy to navigate.
+
+## Root Directory Structure
+
+```
+anidojo/
+├── src/                    # Source code
+├── public/                 # Static assets
+├── .env.local             # Environment variables (not in git)
+├── next.config.ts         # Next.js configuration
+├── tailwind.config.js     # Tailwind CSS configuration
+├── tsconfig.json          # TypeScript configuration
+├── package.json           # Dependencies and scripts
+└── README.md              # Project documentation
+```
+
+## Source Directory (`src/`)
+
+### Complete Structure
+
+```
+src/
+├── app/                   # Next.js App Router pages
+│   ├── anime/            # Anime-related pages
+│   │   └── [id]/         # Dynamic anime detail pages
+│   │       ├── page.tsx           # Anime detail page
+│   │       └── review/            # Review pages
+│   │           └── page.tsx       # Write/edit review
+│   ├── auth/             # Authentication pages
+│   │   └── page.tsx              # Auth page (deprecated)
+│   ├── browse/           # Browse anime page
+│   │   └── page.tsx
+│   ├── dashboard/        # User dashboard
+│   │   └── page.tsx
+│   ├── discover/         # Discover new anime
+│   │   └── page.tsx
+│   ├── my-lists/         # User's custom lists
+│   │   └── page.tsx
+│   ├── my-reviews/       # User's reviews
+│   │   └── page.tsx
+│   ├── profile/          # User profile
+│   │   └── page.tsx
+│   ├── search/           # Global search
+│   │   └── page.tsx
+│   ├── settings/         # User settings
+│   │   └── page.tsx
+│   ├── signin/           # Sign in page
+│   │   └── page.tsx
+│   ├── signup/           # Sign up page
+│   │   └── page.tsx
+│   ├── upcoming/         # Upcoming anime
+│   │   └── page.tsx
+│   ├── layout.tsx        # Root layout (wraps all pages)
+│   └── page.tsx          # Home page
+│
+├── components/            # Reusable React components
+│   ├── AddAnimeModal.tsx         # Modal for adding anime to list
+│   ├── AnimeSearch.tsx           # Anime search component
+│   ├── AuthNavbar.tsx            # Navigation for auth pages
+│   ├── GlobalSearch.tsx          # Global search overlay
+│   ├── HeroBackground.tsx        # Hero section background
+│   ├── Navbar.tsx                # Main navigation
+│   ├── Providers.tsx             # Context providers wrapper
+│   └── ThemeToggle.tsx           # Dark/light theme toggle
+│
+├── contexts/              # React Context providers
+│   ├── AuthContext.tsx           # Authentication state
+│   └── ThemeContext.tsx          # Theme state
+│
+├── hooks/                 # Custom React hooks
+│   └── useAnime.ts               # Anime data fetching hook
+│
+├── lib/                   # Utility functions and services
+│   ├── supabase/         # Supabase integration
+│   │   ├── client.ts            # Browser client
+│   │   ├── server.ts            # Server-side client
+│   │   ├── middleware.ts        # Session middleware
+│   │   ├── queries.ts           # Database queries
+│   │   └── storage.ts           # File storage utilities
+│   ├── animeApi.ts              # Jikan API integration
+│   ├── migration.ts             # Database migration utilities
+│   ├── mockData.ts              # Mock data for development
+│   └── utils.ts                 # General utilities
+│
+├── types/                 # TypeScript type definitions
+│   └── database.ts              # Database schema types
+│
+└── proxy.ts               # API proxy configuration
+```
+
+## Directory Deep Dive
+
+### `/app` - Pages and Routes
+
+<Note>
+  Next.js 15 uses file-system based routing. Each folder with a `page.tsx` becomes a route.
+</Note>
+
+#### Route Structure
+
+| Route | File Path | Description |
+|-------|-----------|-------------|
+| `/` | `app/page.tsx` | Home page with hero and featured anime |
+| `/browse` | `app/browse/page.tsx` | Browse all anime with filters |
+| `/discover` | `app/discover/page.tsx` | Discover personalized recommendations |
+| `/search` | `app/search/page.tsx` | Global search for anime |
+| `/upcoming` | `app/upcoming/page.tsx` | Upcoming seasonal anime |
+| `/anime/[id]` | `app/anime/[id]/page.tsx` | Anime detail page (dynamic) |
+| `/anime/[id]/review` | `app/anime/[id]/review/page.tsx` | Write/edit review |
+| `/dashboard` | `app/dashboard/page.tsx` | User dashboard with stats |
+| `/my-lists` | `app/my-lists/page.tsx` | User's anime lists |
+| `/my-reviews` | `app/my-reviews/page.tsx` | User's reviews |
+| `/profile` | `app/profile/page.tsx` | User profile page |
+| `/settings` | `app/settings/page.tsx` | Account settings |
+| `/signin` | `app/signin/page.tsx` | Sign in form |
+| `/signup` | `app/signup/page.tsx` | Sign up form |
+
+#### Layout Files
+
+<Accordion title="Root Layout (app/layout.tsx)">
+  The root layout wraps all pages and contains:
+  - HTML document structure
+  - Provider components (Auth, Theme)
+  - Global metadata
+  - Font definitions
+  - Navbar component (persists across pages)
+  
+  ```tsx
+  export default function RootLayout({ children }) {
+    return (
+      <html lang="en">
+        <body>
+          <Providers>
+            <Navbar />
+            {children}
+          </Providers>
+        </body>
+      </html>
+    )
+  }
+  ```
+</Accordion>
+
+#### Dynamic Routes
+
+<Accordion title="[id] - Dynamic Parameter">
+  The `[id]` folder creates a dynamic route segment.
+  
+  **Example:** `/anime/[id]/page.tsx`
+  
+  ```tsx
+  export default async function AnimePage({ params }: { params: { id: string } }) {
+    const animeId = params.id // Access dynamic parameter
+    // Fetch anime data using animeId
+  }
+  ```
+  
+  **URLs:**
+  - `/anime/1` → `params.id = "1"`
+  - `/anime/mal-52991` → `params.id = "mal-52991"`
+</Accordion>
+
+### `/components` - UI Components
+
+#### Component Categories
+
+<CardGroup cols={2}>
+  <Card title="Layout Components" icon="layout">
+    `Navbar.tsx`, `AuthNavbar.tsx`
+  </Card>
+  <Card title="Modal Components" icon="window-maximize">
+    `AddAnimeModal.tsx`, `GlobalSearch.tsx`
+  </Card>
+  <Card title="Feature Components" icon="puzzle-piece">
+    `AnimeSearch.tsx`, `ThemeToggle.tsx`
+  </Card>
+  <Card title="Visual Components" icon="image">
+    `HeroBackground.tsx`
+  </Card>
+</CardGroup>
+
+#### Component Patterns
+
+**Client Components** (`'use client'`):
+- All components in `/components` are client components
+- Use React hooks (useState, useEffect, useContext)
+- Handle user interactions
+- Access browser APIs
+
+**Example Structure:**
+```tsx
+'use client'
+
+import { useState } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+
+export function ComponentName() {
+  const [state, setState] = useState()
+  const { user } = useAuth()
+  
+  return <div>...</div>
+}
+```
+
+### `/contexts` - State Management
+
+<Accordion title="AuthContext.tsx">
+  **Purpose:** Global authentication state
+  
+  **Provides:**
+  - `user` - Current user object
+  - `isAuthenticated` - Boolean authentication status
+  - `signIn()` - Sign in function
+  - `signUp()` - Sign up function
+  - `signOut()` - Sign out function
+  - `loading` - Loading state
+  
+  **Usage:**
+  ```tsx
+  import { useAuth } from '@/contexts/AuthContext'
+  
+  const { user, isAuthenticated, signIn } = useAuth()
+  ```
+</Accordion>
+
+<Accordion title="ThemeContext.tsx">
+  **Purpose:** Dark/light theme management
+  
+  **Provides:**
+  - `theme` - Current theme ('dark' | 'light')
+  - `toggleTheme()` - Switch theme
+  
+  **Implementation:**
+  - Stores preference in localStorage
+  - Adds/removes 'dark' class on document
+  - Syncs across browser tabs
+</Accordion>
+
+### `/hooks` - Custom Hooks
+
+<Accordion title="useAnime.ts">
+  Custom hook for fetching anime data with built-in state management.
+  
+  ```tsx
+  export function useAnime(id: number) {
+    const [anime, setAnime] = useState(null)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState(null)
+    
+    // Fetch logic...
+    
+    return { anime, loading, error }
+  }
+  ```
+  
+  **Usage:**
+  ```tsx
+  const { anime, loading, error } = useAnime(1)
+  ```
+</Accordion>
+
+### `/lib` - Business Logic
+
+#### `/lib/supabase` - Database Layer
+
+<CardGroup cols={2}>
+  <Card title="client.ts" icon="browser">
+    Browser-side Supabase client for client components
+  </Card>
+  <Card title="server.ts" icon="server">
+    Server-side Supabase client for server components and API routes
+  </Card>
+  <Card title="queries.ts" icon="database">
+    Database query functions (CRUD operations)
+  </Card>
+  <Card title="storage.ts" icon="folder">
+    File upload and storage utilities
+  </Card>
+</CardGroup>
+
+**Example Query Function:**
+```typescript
+// lib/supabase/queries.ts
+export async function getUserAnimeList(userId: string) {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('anime_entries')
+    .select('*')
+    .eq('user_id', userId)
+    .order('updated_at', { ascending: false })
+  
+  if (error) throw error
+  return data
+}
+```
+
+#### `animeApi.ts` - External API Integration
+
+<Accordion title="Rate Limiter Implementation">
+  ```typescript
+  class APIRateLimiter {
+    private queue = []
+    private processing = false
+    private minInterval = 350 // 350ms between requests
+    private cache = new Map()
+    
+    async call(url: string) {
+      // Check cache
+      // Add to queue
+      // Process with rate limiting
+    }
+  }
+  ```
+</Accordion>
+
+<Accordion title="API Functions">
+  - `searchAnime(query, page, limit)` - Search anime
+  - `getTopAnime(page, limit, filter)` - Get top anime
+  - `getAnimeById(id)` - Get anime details
+  - `getCurrentSeasonAnime(limit)` - Get seasonal anime
+  - `convertJikanToAnime(jikanAnime)` - Data transformation
+</Accordion>
+
+#### `utils.ts` - Helper Functions
+
+Common utility functions:
+- `cn()` - Merge Tailwind classes with `clsx` and `tailwind-merge`
+- Date formatting utilities
+- String manipulation helpers
+
+```typescript
+import { clsx } from 'clsx'
+import { twMerge } from 'tailwind-merge'
+
+export function cn(...inputs) {
+  return twMerge(clsx(inputs))
+}
+```
+
+### `/types` - Type Definitions
+
+<Accordion title="database.ts - Database Schema Types">
+  TypeScript interfaces matching Supabase database schema:
+  
+  ```typescript
+  export interface Profile {
+    id: string
+    username: string
+    avatar_url: string | null
+    bio: string | null
+    created_at: string
+    updated_at: string
+  }
+  
+  export interface AnimeEntry {
+    id: string
+    user_id: string
+    anime_id: number
+    title: string
+    status: 'watching' | 'completed' | 'on-hold' | 'dropped' | 'plan-to-watch'
+    episodes_watched: number
+    score: number | null
+    // ... more fields
+  }
+  
+  export interface Review {
+    id: string
+    user_id: string
+    anime_id: number
+    rating: number
+    title: string
+    body: string
+    // ... more fields
+  }
+  ```
+</Accordion>
+
+## Configuration Files
+
+### `next.config.ts`
+
+<Accordion title="Next.js Configuration">
+  ```typescript
+  const nextConfig: NextConfig = {
+    images: {
+      remotePatterns: [
+        {
+          protocol: 'https',
+          hostname: 'cdn.myanimelist.net', // MyAnimeList CDN
+        },
+        {
+          protocol: 'https',
+          hostname: '*.supabase.co', // Supabase storage
+        },
+      ],
+    },
+  }
+  ```
+  
+  **Purpose:**
+  - Allow Next.js Image component to load images from external domains
+  - Optimize images from MyAnimeList and Supabase
+</Accordion>
+
+### `tailwind.config.js`
+
+<Accordion title="Tailwind Configuration">
+  **Content Paths:**
+  ```javascript
+  content: [
+    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+  ]
+  ```
+  
+  **Custom Theme Extensions:**
+  - Colors: `ink`, `cream`, `crimson`, `jade`, `gold`
+  - Animations: `slide-up`, `fade-in`, `ink-spread`
+  - Shadows: `ink`, `glow-crimson`, `glow-jade`
+  - Background patterns: `halftone`, `speed-lines`
+</Accordion>
+
+### `tsconfig.json`
+
+<Accordion title="TypeScript Configuration">
+  **Path Aliases:**
+  ```json
+  {
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+  ```
+  
+  **Usage:**
+  ```typescript
+  // Instead of: import { useAuth } from '../../../contexts/AuthContext'
+  import { useAuth } from '@/contexts/AuthContext'
+  ```
+</Accordion>
+
+## File Naming Conventions
+
+<CardGroup cols={2}>
+  <Card title="Components" icon="puzzle-piece">
+    PascalCase: `Navbar.tsx`, `AddAnimeModal.tsx`
+  </Card>
+  <Card title="Pages" icon="file">
+    lowercase: `page.tsx`, `layout.tsx`
+  </Card>
+  <Card title="Utilities" icon="wrench">
+    camelCase: `animeApi.ts`, `utils.ts`
+  </Card>
+  <Card title="Types" icon="code">
+    camelCase: `database.ts`
+  </Card>
+</CardGroup>
+
+## Import Organization
+
+Recommended import order:
+
+```typescript
+// 1. React imports
+import { useState, useEffect } from 'react'
+
+// 2. Next.js imports
+import Image from 'next/image'
+import Link from 'next/link'
+
+// 3. External libraries
+import { Search, Heart } from 'lucide-react'
+
+// 4. Internal imports (use @ alias)
+import { useAuth } from '@/contexts/AuthContext'
+import { Navbar } from '@/components/Navbar'
+import { getAnimeById } from '@/lib/animeApi'
+import type { Profile } from '@/types/database'
+
+// 5. Relative imports
+import './styles.css'
+```
+
+## Code Organization Best Practices
+
+### Component Structure
+
+```tsx
+'use client' // If client component
+
+// Imports
+import { useState } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+
+// Types/Interfaces
+interface Props {
+  title: string
+  onClose: () => void
+}
+
+// Component
+export function ComponentName({ title, onClose }: Props) {
+  // Hooks
+  const { user } = useAuth()
+  const [state, setState] = useState()
+  
+  // Event handlers
+  const handleClick = () => {
+    // ...
+  }
+  
+  // Effects
+  useEffect(() => {
+    // ...
+  }, [])
+  
+  // Render
+  return (
+    <div>
+      {/* JSX */}
+    </div>
+  )
+}
+```
+
+### Service Function Structure
+
+```typescript
+// lib/supabase/queries.ts
+
+import { createClient } from './client'
+import type { AnimeEntry } from '@/types/database'
+
+/**
+ * Get user's anime list
+ * @param userId - User ID
+ * @returns Array of anime entries
+ */
+export async function getUserAnimeList(userId: string): Promise<AnimeEntry[]> {
+  const supabase = createClient()
+  
+  const { data, error } = await supabase
+    .from('anime_entries')
+    .select('*')
+    .eq('user_id', userId)
+    .order('updated_at', { ascending: false })
+  
+  if (error) {
+    console.error('Error fetching anime list:', error)
+    throw error
+  }
+  
+  return data
+}
+```
+
+## Environment Variables
+
+<Note>
+  Create a `.env.local` file in the root directory (not in git)
+</Note>
+
+```bash
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+```
+
+**Naming Convention:**
+- `NEXT_PUBLIC_*` - Exposed to browser
+- Others - Server-side only
+
+## Related Documentation
+
+<CardGroup cols={2}>
+  <Card title="Architecture" icon="sitemap" href="/development/architecture">
+    System design and architectural patterns
+  </Card>
+  <Card title="Tech Stack" icon="layer-group" href="/development/tech-stack">
+    Technologies and dependencies overview
+  </Card>
+</CardGroup>

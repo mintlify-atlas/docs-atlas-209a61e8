@@ -1,0 +1,536 @@
+---
+title: 'AI-Powered Discovery'
+description: 'Get personalized anime recommendations using mood-based AI matching'
+icon: 'sparkles'
+---
+
+## Overview
+
+AniDojo's AI Discovery system analyzes your mood, preferences, and watching history to recommend anime that perfectly match what you're looking for right now. Tell us how you're feeling, and we'll find the perfect anime for you.
+
+<Info>
+  Recommendations combine mood-based matching with your personal ratings and watch history for highly personalized suggestions.
+</Info>
+
+## How AI Discovery Works
+
+<Steps>
+  <Step title="Select Your Mood">
+    Choose from 6 mood categories that describe how you're feeling:
+    
+    <CardGroup cols={2}>
+      <Card title="Excited" icon="bolt">
+        High-energy action and intense battles
+      </Card>
+      <Card title="Relaxed" icon="cloud">
+        Calm, healing slice-of-life anime
+      </Card>
+      <Card title="Curious" icon="brain">
+        Mind-bending mysteries and thrillers
+      </Card>
+      <Card title="Nostalgic" icon="clock">
+        Timeless classics and retro anime
+      </Card>
+      <Card title="Romantic" icon="heart">
+        Heartwarming love stories
+      </Card>
+      <Card title="Adventurous" icon="compass">
+        Epic journeys and fantasy worlds
+      </Card>
+    </CardGroup>
+    
+    <Tip>
+      You can select multiple moods! Combine "Excited + Curious" for action-mystery anime, or "Relaxed + Romantic" for gentle love stories.
+    </Tip>
+  </Step>
+  
+  <Step title="Refine with Filters (Optional)">
+    Click "Advanced Filters" to narrow results:
+    
+    - **Genres**: Select specific genres to include
+    - **Type**: TV series, movies, OVAs, etc.
+    - **Score Range**: Set minimum/maximum MAL scores (1-10)
+    - **Year Range**: Filter by release year (1960-2025)
+    - **Status**: Airing, Finished, Upcoming
+  </Step>
+  
+  <Step title="Set Preferences">
+    Toggle preferences to customize recommendations:
+    
+    - **Show anime I've reviewed**: Include/exclude reviewed anime
+    - **Show anime in my lists**: Include/exclude listed anime  
+    - **Prioritize highly rated**: Weight toward high MAL scores
+    - **Include less popular**: Discover hidden gems
+  </Step>
+  
+  <Step title="Generate Recommendations">
+    Click "Get Recommendations" to run the AI matching algorithm.
+    
+    <Note>
+      The algorithm analyzes:
+      - Your selected moods and their associated genres
+      - Your applied filters and preferences
+      - Your watch history and ratings (if signed in)
+      - MAL scores and popularity metrics
+      - Genre overlap and compatibility
+    </Note>
+  </Step>
+  
+  <Step title="Review Top Pick">
+    Your #1 recommendation appears first with:
+    - Large cover art
+    - Full synopsis
+    - Match percentage explanation
+    - Quick actions (Add to List, Write Review, View Details)
+    
+    <Info>
+      The top pick has the highest match score based on your mood, filters, and preferences.
+    </Info>
+  </Step>
+  
+  <Step title="Browse More Recommendations">
+    Scroll down to see 15+ additional recommendations, each with:
+    - Match percentage
+    - MAL score
+    - Genre tags
+    - Brief synopsis
+    
+    Click "Load More" to see extended results.
+  </Step>
+</Steps>
+
+## Mood Categories
+
+### Excited
+
+**Best for**: Action-packed entertainment, adrenaline rushes
+
+**Recommended genres**:
+- Action
+- Shounen
+- Sports
+- Mecha
+
+**Example anime**:
+- Attack on Titan
+- My Hero Academia  
+- Haikyuu!!
+- Code Geass
+
+<Tip>
+  Choose "Excited" when you want intense battles, competition, or high-stakes drama.
+</Tip>
+
+### Relaxed
+
+**Best for**: Unwinding after work, comfort viewing
+
+**Recommended genres**:
+- Slice of Life
+- Iyashikei (healing)
+- Comedy
+- Drama
+
+**Example anime**:
+- Laid-Back Camp
+- K-On!
+- Barakamon
+- Non Non Biyori
+
+<Tip>
+  Select "Relaxed" for cozy, low-stakes anime that help you decompress.
+</Tip>
+
+### Curious
+
+**Best for**: Engaging your mind, solving puzzles
+
+**Recommended genres**:
+- Mystery
+- Psychological
+- Thriller
+- Supernatural
+
+**Example anime**:
+- Death Note
+- Steins;Gate
+- Monster
+- The Promised Neverland
+
+<Tip>
+  Pick "Curious" when you want complex plots, plot twists, and intellectual stimulation.
+</Tip>
+
+### Nostalgic
+
+**Best for**: Revisiting classics, appreciating anime history
+
+**Recommended genres**:
+- Classic
+- Retro
+- Old School
+
+**Example anime**:
+- Cowboy Bebop
+- Trigun
+- Sailor Moon
+- Dragon Ball Z
+
+<Tip>
+  Choose "Nostalgic" to discover or rediscover beloved series from the '80s, '90s, and early 2000s.
+</Tip>
+
+### Romantic
+
+**Best for**: Emotional stories, character relationships
+
+**Recommended genres**:
+- Romance
+- Shoujo
+- Drama
+- Josei
+
+**Example anime**:
+- Your Name
+- Fruits Basket
+- Toradora!
+- Kaguya-sama: Love is War
+
+<Tip>
+  Select "Romantic" for love stories, from lighthearted rom-coms to dramatic relationship dramas.
+</Tip>
+
+### Adventurous
+
+**Best for**: Epic quests, world exploration
+
+**Recommended genres**:
+- Adventure
+- Fantasy
+- Isekai
+- Action
+
+**Example anime**:
+- Fullmetal Alchemist: Brotherhood
+- Made in Abyss
+- Re:Zero
+- Mushoku Tensei
+
+<Tip>
+  Choose "Adventurous" for grand-scale journeys, exploration, and fantastical worlds.
+</Tip>
+
+## Match Percentage
+
+Each recommendation shows a match percentage (0-100%):
+
+```typescript
+// From ~/workspace/source/src/app/discover/page.tsx:336
+const calculateMatchPercentage = (anime, selectedMoods, filters) => {
+  // Genre matching: 0-100 points
+  // Score range: 0-20 points  
+  // Year range: 0-20 points
+  // Type match: 0-20 points
+  // Status match: 0-20 points
+  // Total: 0-100%
+}
+```
+
+### Match Breakdown
+
+**90-100%**: Perfect match
+- All or most genres align with your mood
+- Meets all filter criteria
+- High MAL score (if prioritized)
+
+**70-89%**: Great match
+- Strong genre overlap
+- Meets most filter criteria
+- Good MAL score
+
+**50-69%**: Good match
+- Some genre overlap
+- Partially meets filters
+- Acceptable score
+
+**Below 50%**: Okay match
+- Minimal genre alignment
+- May not meet some filters
+- Lower score or popularity
+
+<Info>
+  Match percentage helps you prioritize which anime to watch first. Start with 90%+ matches for best results!
+</Info>
+
+## Advanced Filters
+
+### Genre Selection
+
+Refine mood recommendations with specific genres:
+
+```
+Action, Adventure, Comedy, Drama, Fantasy, Horror, Mystery,  
+Romance, Sci-Fi, Slice of Life, Sports, Supernatural, Thriller...
+(40+ genres available)
+```
+
+<Tip>
+  Genres combine with moods. Example: "Excited" mood + "Mecha" genre = action mecha anime.
+</Tip>
+
+### Type Filter
+
+Narrow by format:
+- **TV**: Standard TV series (12-24 episodes)
+- **Movie**: Anime films (1-3 hours)
+- **OVA**: Original Video Animation (special episodes)
+- **ONA**: Online-exclusive releases
+- **Special**: One-off specials or extras
+
+<Tip>
+  Select "Movie" when you want a complete story in one sitting.
+</Tip>
+
+### Score Range
+
+Set minimum/maximum MAL scores:
+
+```
+Score Range: [7.0] ─────●─── [10.0]
+```
+
+<Tip>
+  Set minimum to 7.0+ for consistently good recommendations. Lower it to 5.0 for more variety and hidden gems.
+</Tip>
+
+### Year Range
+
+Filter by release year:
+
+```
+Year Range: [2000] ─────●──────●───── [2024]
+```
+
+<Tip>
+  Narrow to recent years (2020-2024) for modern animation quality. Expand to 1990+ for classic recommendations.
+</Tip>
+
+## Preference Toggles
+
+### Show Reviewed Anime
+
+**Enabled**: Include anime you've already reviewed
+**Disabled**: Only show unreviewed anime
+
+<Note>
+  Useful if you want to discover entirely new anime vs. revisit shows you've seen.
+</Note>
+
+### Show Anime in Lists
+
+**Enabled**: Include anime from your lists
+**Disabled**: Only show anime not in your lists
+
+<Tip>
+  Disable to discover anime you haven't added yet. Enable if you want recommendations from your watchlist.
+</Tip>
+
+### Prioritize Highly Rated
+
+**Enabled**: Weight toward high MAL scores
+**Disabled**: Equal weighting regardless of score
+
+<Info>
+  Enable for "safe" recommendations with proven quality. Disable for more variety.
+</Info>
+
+### Include Less Popular
+
+**Enabled**: Include under-the-radar anime
+**Disabled**: Focus on mainstream titles
+
+<Tip>
+  Enable to discover hidden gems and niche anime. Disable for well-known, broadly appealing shows.
+</Tip>
+
+## Recommendation Explanation
+
+Each top pick includes a generated explanation:
+
+```markdown
+"Perfect for when you're feeling excited and curious. This TV series
+combines Action, Mystery, and Thriller to create an engaging experience
+that matches your current mood."
+```
+
+Explanations describe:
+- **Mood match**: How it aligns with your feelings
+- **Genre blend**: Key genres present
+- **Format**: Type and length
+- **Experience**: What to expect
+
+## Saving Recommendations
+
+Save recommendation sets for later:
+
+<Steps>
+  <Step title="Generate Recommendations">
+    Create a set of recommendations using moods and filters.
+  </Step>
+  
+  <Step title="Click Save This Set">
+    Button appears above "More Recommendations" section.
+  </Step>
+  
+  <Step title="Name Your Set">
+    Enter a name like:
+    - "Friday Night Action"
+    - "Relaxing Weekend Anime"
+    - "Mystery Marathon"
+  </Step>
+  
+  <Step title="Access Later">
+    Saved sets appear in the sidebar under "Previous Recommendations."
+  </Step>
+</Steps>
+
+<Info>
+  Recommendation history is saved in browser localStorage and persists across sessions.
+</Info>
+
+## Recommendation History
+
+View past recommendation sets in the sidebar:
+
+```typescript
+// From ~/workspace/source/src/app/discover/page.tsx:813
+Previous Recommendations:
+  - Dec 15, 2024 | "Excited + Curious" | 20 anime
+  - Dec 10, 2024 | "Relaxed" | 15 anime  
+  - Dec 5, 2024 | "Adventurous" | 18 anime
+```
+
+Each saved set includes:
+- Generation date
+- Moods selected
+- Anime count
+- Optional custom name
+
+Click to reload that recommendation set.
+
+<Tip>
+  History stores your last 10 recommendation sets. Clear history using the trash icon.
+</Tip>
+
+## Quick Actions
+
+From recommendation results:
+
+<CardGroup cols={3}>
+  <Card title="Add to List" icon="plus">
+    Quick-add to Watching or Plan to Watch
+  </Card>
+  <Card title="Write Review" icon="pen">
+    Navigate to review page for this anime
+  </Card>
+  <Card title="View Details" icon="eye">
+    See full anime information and synopsis
+  </Card>
+</CardGroup>
+
+## Tips for Best Results
+
+<Tip>
+  **Be Specific**: Select multiple moods and apply filters for highly targeted recommendations.
+</Tip>
+
+<Tip>
+  **Try Different Combinations**: Experiment with mood combinations. "Curious + Romantic" might surprise you!
+</Tip>
+
+<Tip>
+  **Update Preferences**: Your taste changes! Adjust filters and preferences regularly.
+</Tip>
+
+<Tip>
+  **Rate More Anime**: The more you rate, the better recommendations become over time.
+</Tip>
+
+<Tip>
+  **Save Good Sets**: Found a great combination? Save it for easy access later.
+</Tip>
+
+## How AI Learns
+
+Recommendations improve as you use AniDojo:
+
+1. **Rating History**: Your scores train the algorithm on your preferences
+2. **Watch Patterns**: Status changes (completed, dropped) indicate quality
+3. **Genre Preferences**: Frequently watched genres get weighted higher
+4. **Time Patterns**: Algorithm learns when you watch certain types
+5. **Review Text**: Sentiment analysis from reviews (coming soon)
+
+<Info>
+  The more you use AniDojo (rating, reviewing, tracking), the more personalized your recommendations become.
+</Info>
+
+## Mood-Based vs. Traditional Search
+
+### Use Mood Discovery When:
+- You're not sure what to watch
+- You want something matching your feelings
+- You're open to surprises
+- You want curated suggestions
+
+### Use Traditional Search When:
+- You know the specific anime you want
+- You're looking for a particular title
+- You need precise filters (studio, year, etc.)
+- You're researching a specific genre
+
+<Tip>
+  Combine both! Use Discovery for new ideas, then Search to find similar anime.
+</Tip>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Add to Lists" icon="list" href="/features/lists-tracking">
+    Save recommended anime to your lists
+  </Card>
+  <Card title="Write Reviews" icon="pen" href="/features/reviews">
+    Review anime to improve recommendations
+  </Card>
+  <Card title="Browse Search" icon="search" href="/features/anime-search">
+    Explore anime with traditional search
+  </Card>
+  <Card title="View Profile" icon="user" href="/features/user-profiles">
+    See how recommendations use your data
+  </Card>
+</CardGroup>
+
+## Common Questions
+
+<Note>
+  **Q: Why don't I see anime I've already watched?**
+  
+  A: Toggle "Show anime in my lists" and "Show reviewed anime" to include watched anime in recommendations.
+</Note>
+
+<Note>
+  **Q: How often should I use Discovery vs. Search?**
+  
+  A: Use Discovery when you want suggestions, Search when you know what you want. Both complement each other!
+</Note>
+
+<Note>
+  **Q: Can I get recommendations without selecting a mood?**
+  
+  A: Mood selection is required. If unsure, try "Adventurous" for broad appeal, or select multiple moods.
+</Note>
+
+<Note>  
+  **Q: Why are some recommendations low matches?**
+  
+  A: Strict filters can limit results. Try relaxing some filters or changing moods for better matches.
+</Note>

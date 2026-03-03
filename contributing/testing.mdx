@@ -1,0 +1,384 @@
+---
+title: 'Testing'
+description: 'Testing approach and best practices for ensuring AniDojo quality'
+---
+
+## Testing Philosophy
+
+AniDojo emphasizes quality through comprehensive testing. While the project is currently in active development, we're building a robust testing foundation to ensure reliability as features grow.
+
+## Testing Strategy
+
+### Current Approach
+
+AniDojo currently focuses on:
+
+- **Manual Testing** - Thorough browser testing during development
+- **TypeScript Type Checking** - Compile-time error prevention
+- **ESLint** - Code quality and best practice enforcement
+- **Browser Testing** - Real-world usage testing across devices
+
+<Note>
+  Automated testing infrastructure is planned for future releases. The foundation is being built to support unit, integration, and E2E tests.
+</Note>
+
+## Development Testing Workflow
+
+<Steps>
+  <Step title="Run the Development Server">
+    Start the development server with Turbopack for hot reloading:
+    
+    <CodeGroup>
+    ```bash npm
+    npm run dev
+    ```
+    
+    ```bash yarn
+    yarn dev
+    ```
+    
+    ```bash pnpm
+    pnpm dev
+    ```
+    
+    ```bash bun
+    bun dev
+    ```
+    </CodeGroup>
+    
+    The app will be available at [http://localhost:3000](http://localhost:3000)
+  </Step>
+  
+  <Step title="Test in the Browser">
+    Manually test your changes:
+    
+    - Navigate through affected pages
+    - Test user interactions (clicks, forms, navigation)
+    - Check responsive design on different screen sizes
+    - Verify animations and transitions
+    - Test edge cases and error states
+  </Step>
+  
+  <Step title="Run Type Checking">
+    Verify TypeScript types compile correctly:
+    
+    ```bash
+    npx tsc --noEmit
+    ```
+    
+    This ensures type safety without emitting files.
+  </Step>
+  
+  <Step title="Run ESLint">
+    Check code quality and fix issues:
+    
+    <CodeGroup>
+    ```bash npm
+    npm run lint
+    ```
+    
+    ```bash yarn
+    yarn lint
+    ```
+    
+    ```bash pnpm
+    pnpm lint
+    ```
+    
+    ```bash bun
+    bun lint
+    ```
+    </CodeGroup>
+  </Step>
+  
+  <Step title="Build for Production">
+    Ensure the production build succeeds:
+    
+    <CodeGroup>
+    ```bash npm
+    npm run build
+    ```
+    
+    ```bash yarn
+    yarn build
+    ```
+    
+    ```bash pnpm
+    pnpm build
+    ```
+    
+    ```bash bun
+    bun build
+    ```
+    </CodeGroup>
+    
+    <Tip>
+      The build process catches many issues that might not appear in development mode.
+    </Tip>
+  </Step>
+</Steps>
+
+## TypeScript as a Testing Tool
+
+### Type Safety Benefits
+
+TypeScript catches many bugs at compile time:
+
+```typescript
+interface Anime {
+  id: string;
+  title: string;
+  episodes: number;
+}
+
+// TypeScript will catch this error
+const anime: Anime = {
+  id: '1',
+  title: 'Naruto',
+  // Missing 'episodes' property - compile error!
+};
+```
+
+### Strict Mode Configuration
+
+AniDojo uses strict TypeScript settings:
+
+```json
+{
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true
+  }
+}
+```
+
+This enables:
+- `strictNullChecks` - Prevent null/undefined errors
+- `strictFunctionTypes` - Type-safe function parameters
+- `noImplicitAny` - Require explicit types
+- `noImplicitThis` - Prevent `this` context errors
+
+## Manual Testing Checklist
+
+When testing new features or changes, verify:
+
+### Functionality
+- [ ] Feature works as expected
+- [ ] All user interactions respond correctly
+- [ ] Navigation works between pages
+- [ ] Forms validate and submit properly
+- [ ] Data displays correctly
+
+### UI/UX
+- [ ] Layout is correct on desktop
+- [ ] Layout is correct on mobile devices
+- [ ] Layout is correct on tablets
+- [ ] Dark theme displays properly
+- [ ] Animations and transitions are smooth
+- [ ] Loading states display appropriately
+
+### Error Handling
+- [ ] Error messages display correctly
+- [ ] Invalid input is handled gracefully
+- [ ] Network errors are caught
+- [ ] 404 pages work correctly
+- [ ] Fallback UI displays when needed
+
+### Performance
+- [ ] Pages load quickly
+- [ ] No console errors or warnings
+- [ ] Images load properly
+- [ ] No layout shift during load
+- [ ] Smooth scrolling and interactions
+
+### Accessibility
+- [ ] Keyboard navigation works
+- [ ] Focus indicators are visible
+- [ ] Semantic HTML is used
+- [ ] Alt text on images
+- [ ] Proper heading hierarchy
+
+## Browser Testing
+
+### Recommended Browsers
+
+Test your changes in:
+
+- **Chrome** - Primary development browser
+- **Firefox** - Cross-browser compatibility
+- **Safari** - WebKit engine testing
+- **Edge** - Chromium-based alternative
+
+### Responsive Testing
+
+Test at these breakpoints:
+
+```css
+/* Mobile */
+@media (max-width: 640px)
+
+/* Tablet */
+@media (min-width: 641px) and (max-width: 1024px)
+
+/* Desktop */
+@media (min-width: 1025px)
+```
+
+<Tip>
+  Use browser DevTools device emulation to test different screen sizes and devices.
+</Tip>
+
+## Future Testing Plans
+
+### Unit Testing
+
+Planned setup with Jest or Vitest:
+
+```typescript
+// Example unit test (future)
+import { render, screen } from '@testing-library/react';
+import { AnimeCard } from '@/components/AnimeCard';
+
+describe('AnimeCard', () => {
+  it('renders anime title', () => {
+    render(<AnimeCard title="Naruto" imageUrl="/naruto.jpg" rating={8.5} />);
+    expect(screen.getByText('Naruto')).toBeInTheDocument();
+  });
+  
+  it('displays rating correctly', () => {
+    render(<AnimeCard title="Naruto" imageUrl="/naruto.jpg" rating={8.5} />);
+    expect(screen.getByText('8.5')).toBeInTheDocument();
+  });
+});
+```
+
+### Integration Testing
+
+Planned tests for component interactions:
+
+```typescript
+// Example integration test (future)
+import { render, screen, fireEvent } from '@testing-library/react';
+import { SearchBar } from '@/components/SearchBar';
+
+describe('SearchBar Integration', () => {
+  it('filters anime list on search', async () => {
+    render(<AnimeListPage />);
+    
+    const searchInput = screen.getByPlaceholderText('Search anime...');
+    fireEvent.change(searchInput, { target: { value: 'Naruto' } });
+    
+    // Verify filtered results
+    expect(screen.getByText('Naruto')).toBeInTheDocument();
+    expect(screen.queryByText('One Piece')).not.toBeInTheDocument();
+  });
+});
+```
+
+### End-to-End Testing
+
+Planned E2E tests with Playwright:
+
+```typescript
+// Example E2E test (future)
+import { test, expect } from '@playwright/test';
+
+test('user can browse and view anime details', async ({ page }) => {
+  await page.goto('http://localhost:3000');
+  
+  // Navigate to browse page
+  await page.click('text=Browse');
+  await expect(page).toHaveURL(/.*browse/);
+  
+  // Click on first anime
+  await page.click('.anime-card:first-child');
+  
+  // Verify details page loaded
+  await expect(page.locator('h1')).toBeVisible();
+});
+```
+
+## Testing Best Practices
+
+<Steps>
+  <Step title="Test Early and Often">
+    Don't wait until the end to test. Test as you develop.
+  </Step>
+  
+  <Step title="Test Real User Flows">
+    Think like a user. Test complete workflows, not just individual functions.
+  </Step>
+  
+  <Step title="Test Edge Cases">
+    Don't just test the happy path. Try invalid inputs, empty states, and error conditions.
+  </Step>
+  
+  <Step title="Document Issues">
+    When you find a bug, document it clearly with steps to reproduce.
+  </Step>
+  
+  <Step title="Fix Breaking Changes">
+    If you introduce a breaking change, update affected code and documentation.
+  </Step>
+</Steps>
+
+## Continuous Integration
+
+### Build Verification
+
+Production builds run automatically in CI:
+
+```yaml
+# Example CI workflow (future)
+name: CI
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+      - run: npm install
+      - run: npm run lint
+      - run: npx tsc --noEmit
+      - run: npm run build
+```
+
+## Code Quality Gates
+
+Before merging code, ensure:
+
+1. **TypeScript compiles** without errors
+2. **ESLint passes** with no warnings
+3. **Build succeeds** in production mode
+4. **Manual testing** completed
+5. **PR review** approved by maintainer
+
+<Note>
+  As the project grows, additional automated testing will be added to catch regressions and ensure consistent quality.
+</Note>
+
+## Reporting Bugs
+
+When you find a bug:
+
+1. **Check if it's already reported** in GitHub issues
+2. **Create a new issue** with:
+   - Clear description of the problem
+   - Steps to reproduce
+   - Expected vs actual behavior
+   - Browser and environment details
+   - Screenshots if applicable
+3. **Label appropriately** (bug, critical, etc.)
+
+## Testing Resources
+
+- [Next.js Testing Docs](https://nextjs.org/docs/testing)
+- [React Testing Library](https://testing-library.com/react)
+- [TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/intro.html)
+- [Jest Documentation](https://jestjs.io/docs/getting-started)
+- [Playwright Docs](https://playwright.dev/)
+
+By following these testing practices, we maintain high quality and reliability in AniDojo!

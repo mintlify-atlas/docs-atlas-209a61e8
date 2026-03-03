@@ -1,0 +1,310 @@
+---
+title: 'Anime API Overview'
+description: 'Complete reference for AniDojo anime API functions powered by Jikan (MyAnimeList API)'
+---
+
+## Introduction
+
+The AniDojo Anime API provides TypeScript functions for fetching anime data from the Jikan API (MyAnimeList). All functions include built-in rate limiting, caching, and error handling.
+
+## Key Features
+
+- **Automatic Rate Limiting**: 3 requests per second with queue management
+- **Smart Caching**: 5-minute cache with automatic expiry
+- **Retry Logic**: Exponential backoff for failed requests
+- **Type Safety**: Full TypeScript support with comprehensive interfaces
+- **Zero Configuration**: No API key required
+
+## Available Functions
+
+<CardGroup cols={2}>
+  <Card title="Search Anime" icon="magnifying-glass" href="/api/anime/search">
+    Search for anime by query string with pagination
+  </Card>
+  <Card title="Top Anime" icon="trophy" href="/api/anime/top-anime">
+    Get top-rated anime with optional filtering
+  </Card>
+  <Card title="Seasonal Anime" icon="calendar" href="/api/anime/seasonal">
+    Fetch anime by season and year, or get current season
+  </Card>
+  <Card title="Get by ID" icon="hashtag" href="/api/anime/overview#get-anime-by-id">
+    Retrieve detailed information for a specific anime
+  </Card>
+</CardGroup>
+
+## Quick Start
+
+<CodeGroup>
+```typescript Import
+import { 
+  searchAnime, 
+  getTopAnime, 
+  getSeasonalAnime,
+  getCurrentSeasonAnime,
+  getAnimeById,
+  type JikanAnime,
+  type JikanSearchResponse
+} from '@/lib/animeApi';
+```
+
+```typescript Search Example
+// Search for anime
+const results = await searchAnime('Naruto', 1, 20);
+
+console.log(results.data); // Array of JikanAnime objects
+console.log(results.pagination); // Pagination info
+```
+
+```typescript Top Anime Example
+// Get top-rated anime
+const topAnime = await getTopAnime(1, 20, 'airing');
+
+console.log(`Found ${topAnime.data.length} top anime`);
+```
+</CodeGroup>
+
+## Core Types
+
+### JikanAnime Interface
+
+The primary data structure returned by all API functions:
+
+<ResponseField name="mal_id" type="number" required>
+  MyAnimeList unique identifier
+</ResponseField>
+
+<ResponseField name="title" type="string" required>
+  Default anime title (usually romaji)
+</ResponseField>
+
+<ResponseField name="title_english" type="string">
+  English translated title
+</ResponseField>
+
+<ResponseField name="title_japanese" type="string">
+  Original Japanese title
+</ResponseField>
+
+<ResponseField name="images" type="object" required>
+  Image URLs in multiple formats
+  <Expandable title="properties">
+    <ResponseField name="jpg" type="object">
+      <Expandable title="properties">
+        <ResponseField name="image_url" type="string">Standard JPG image</ResponseField>
+        <ResponseField name="small_image_url" type="string">Small JPG image</ResponseField>
+        <ResponseField name="large_image_url" type="string">Large JPG image</ResponseField>
+      </Expandable>
+    </ResponseField>
+    <ResponseField name="webp" type="object">
+      <Expandable title="properties">
+        <ResponseField name="image_url" type="string">Standard WebP image</ResponseField>
+        <ResponseField name="small_image_url" type="string">Small WebP image</ResponseField>
+        <ResponseField name="large_image_url" type="string">Large WebP image</ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="type" type="string" required>
+  Anime type: TV, Movie, OVA, Special, ONA, Music
+</ResponseField>
+
+<ResponseField name="episodes" type="number" required>
+  Total number of episodes
+</ResponseField>
+
+<ResponseField name="status" type="string" required>
+  Current airing status: Currently Airing, Finished Airing, Not yet aired
+</ResponseField>
+
+<ResponseField name="score" type="number" required>
+  MyAnimeList rating score (0-10)
+</ResponseField>
+
+<ResponseField name="synopsis" type="string" required>
+  Plot description and summary
+</ResponseField>
+
+<ResponseField name="genres" type="array" required>
+  Array of genre objects with `mal_id`, `name`, `type`, and `url`
+</ResponseField>
+
+<ResponseField name="studios" type="array" required>
+  Array of animation studio objects
+</ResponseField>
+
+<ResponseField name="year" type="number">
+  Release year
+</ResponseField>
+
+### JikanSearchResponse Interface
+
+Wrapper for paginated API responses:
+
+<ResponseField name="data" type="JikanAnime[]" required>
+  Array of anime objects matching the query
+</ResponseField>
+
+<ResponseField name="pagination" type="object" required>
+  Pagination metadata
+  <Expandable title="properties">
+    <ResponseField name="last_visible_page" type="number">Total number of pages</ResponseField>
+    <ResponseField name="has_next_page" type="boolean">Whether more pages exist</ResponseField>
+    <ResponseField name="current_page" type="number">Current page number</ResponseField>
+    <ResponseField name="items" type="object">
+      <Expandable title="properties">
+        <ResponseField name="count" type="number">Items on current page</ResponseField>
+        <ResponseField name="total" type="number">Total items across all pages</ResponseField>
+        <ResponseField name="per_page" type="number">Items per page</ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Get Anime by ID
+
+Retrieve detailed information for a specific anime using its MyAnimeList ID.
+
+### Function Signature
+
+```typescript
+getAnimeById(id: number): Promise<{ data: JikanAnime }>
+```
+
+<ParamField path="id" type="number" required>
+  MyAnimeList anime ID (mal_id)
+</ParamField>
+
+### Example
+
+<CodeGroup>
+```typescript Basic Usage
+import { getAnimeById } from '@/lib/animeApi';
+
+const response = await getAnimeById(1);
+const anime = response.data;
+
+console.log(anime.title); // "Cowboy Bebop"
+console.log(anime.score); // 8.78
+```
+
+```typescript With Error Handling
+try {
+  const { data: anime } = await getAnimeById(16498);
+  
+  console.log(`Title: ${anime.title}`);
+  console.log(`Episodes: ${anime.episodes}`);
+  console.log(`Score: ${anime.score}/10`);
+} catch (error) {
+  console.error('Failed to fetch anime:', error);
+}
+```
+</CodeGroup>
+
+### Response
+
+Returns an object with a `data` property containing a single `JikanAnime` object.
+
+## Utility Functions
+
+### convertJikanToAnime
+
+Converts Jikan API format to AniDojo's internal `Anime` interface.
+
+```typescript
+convertJikanToAnime(jikanAnime: JikanAnime): Anime
+```
+
+### clearAPICache
+
+Clears the internal API cache, forcing fresh data on next request.
+
+```typescript
+import { clearAPICache } from '@/lib/animeApi';
+
+clearAPICache(); // All cached responses cleared
+```
+
+## Rate Limiting
+
+The API automatically handles Jikan's rate limits:
+
+- **Limit**: 3 requests per second (~350ms between calls)
+- **Queue**: Automatic request queuing when limit reached
+- **Retry**: Up to 3 retries with exponential backoff on 429 errors
+- **Cache**: 5-minute cache to reduce API calls
+
+<Warning>
+  Do not implement your own rate limiting. The built-in `APIRateLimiter` class handles all rate limiting automatically.
+</Warning>
+
+## Error Handling
+
+All functions may throw errors for:
+
+- Network failures
+- Invalid responses (non-200 status codes)
+- Rate limit exceeded (after retries)
+- Malformed API responses
+
+<CodeGroup>
+```typescript Try-Catch Pattern
+try {
+  const results = await searchAnime('Naruto');
+  // Handle results
+} catch (error) {
+  if (error instanceof Error) {
+    console.error('API Error:', error.message);
+  }
+}
+```
+
+```typescript With React Hooks
+import { useAnimeSearch } from '@/hooks/useAnime';
+
+function MyComponent() {
+  const { data, loading, error } = useAnimeSearch('One Piece');
+  
+  if (error) return <div>Error: {error}</div>;
+  if (loading) return <div>Loading...</div>;
+  
+  return <div>{/* Render anime data */}</div>;
+}
+```
+</CodeGroup>
+
+## React Hooks
+
+For React applications, use the provided hooks from `/hooks/useAnime.ts`:
+
+- `useAnimeSearch(query, page)` - Search with loading/error states
+- `useTopAnime(page)` - Top anime with automatic updates
+- `useSeasonalAnime(year, season)` - Seasonal anime data
+
+These hooks are defined in `src/hooks/useAnime.ts` and handle loading states, error handling, and data caching automatically.
+
+## API Source
+
+All anime data is provided by the [Jikan API](https://jikan.moe/), an unofficial MyAnimeList API.
+
+- **Base URL**: `https://api.jikan.moe/v4/`
+- **Documentation**: [docs.api.jikan.moe](https://docs.api.jikan.moe/)
+- **Rate Limit**: 3 requests/second, 60 requests/minute
+- **Authentication**: None required
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Search Function" icon="magnifying-glass" href="/api/anime/search">
+    Learn about searchAnime() parameters and usage
+  </Card>
+  <Card title="Top Anime Function" icon="trophy" href="/api/anime/top-anime">
+    Explore getTopAnime() with filters
+  </Card>
+  <Card title="Seasonal Function" icon="calendar" href="/api/anime/seasonal">
+    Get seasonal and current anime data
+  </Card>
+  <Card title="Database Schema" icon="database" href="/api/database/schema">
+    Explore the database structure and tables
+  </Card>
+</CardGroup>

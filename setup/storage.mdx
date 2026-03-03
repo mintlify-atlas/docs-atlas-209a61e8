@@ -1,0 +1,476 @@
+---
+title: 'Storage Buckets & Policies'
+description: 'Configure Supabase Storage for avatars and image uploads'
+icon: 'folder'
+---
+
+## Overview
+
+Supabase Storage provides S3-compatible object storage for user uploads. AniDojo uses Storage for profile avatars, anime images, and review attachments.
+
+## Required Storage Buckets
+
+AniDojo uses three storage buckets:
+
+- **avatars** - User profile pictures
+- **anime-images** - Custom anime cover art (optional)
+- **review-images** - Review image attachments (optional)
+
+## Creating Storage Buckets
+
+<Steps>
+  <Step title="Navigate to Storage">
+    In your Supabase dashboard, click **Storage** in the left sidebar.
+  </Step>
+
+  <Step title="Create avatars bucket">
+    Click **New bucket** and configure:
+    
+    - **Name**: `avatars`
+    - **Public bucket**: ✅ Enabled
+    - **File size limit**: 5 MB
+    - **Allowed MIME types**: `image/jpeg`, `image/png`, `image/webp`, `image/gif`
+    
+    Click **Create bucket**
+  </Step>
+
+  <Step title="Create anime-images bucket (optional)">
+    Click **New bucket** and configure:
+    
+    - **Name**: `anime-images`
+    - **Public bucket**: ✅ Enabled
+    - **File size limit**: 10 MB
+    - **Allowed MIME types**: `image/jpeg`, `image/png`, `image/webp`
+  </Step>
+
+  <Step title="Create review-images bucket (optional)">
+    Click **New bucket** and configure:
+    
+    - **Name**: `review-images`
+    - **Public bucket**: ✅ Enabled
+    - **File size limit**: 10 MB
+    - **Allowed MIME types**: `image/jpeg`, `image/png`, `image/webp`
+  </Step>
+</Steps>
+
+<Note>
+  Public buckets allow anyone to view files, but Storage Policies control who can upload, update, or delete files.
+</Note>
+
+## Storage Policies
+
+After creating buckets, set up Row Level Security policies to control access.
+
+### Avatars Bucket Policies
+
+Navigate to **Storage** → **Policies** → **avatars** and create these policies:
+
+<Accordion title="Public read access">
+  Allow anyone to view avatar images:
+  
+  ```sql
+  CREATE POLICY "Avatar images are publicly accessible"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'avatars');
+  ```
+</Accordion>
+
+<Accordion title="Users can upload their own avatar">
+  Users can only upload to their own user ID folder:
+  
+  ```sql
+  CREATE POLICY "Users can upload their own avatar"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'avatars' AND
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
+  ```
+  
+  This ensures users upload to paths like: `{user_id}/avatar.jpg`
+</Accordion>
+
+<Accordion title="Users can update their own avatar">
+  ```sql
+  CREATE POLICY "Users can update their own avatar"
+  ON storage.objects FOR UPDATE
+  USING (
+    bucket_id = 'avatars' AND
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
+  ```
+</Accordion>
+
+<Accordion title="Users can delete their own avatar">
+  ```sql
+  CREATE POLICY "Users can delete their own avatar"
+  ON storage.objects FOR DELETE
+  USING (
+    bucket_id = 'avatars' AND
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
+  ```
+</Accordion>
+
+### Complete Avatars Policies SQL
+
+<CodeGroup>
+```sql All Avatar Policies
+-- Allow public read access
+CREATE POLICY "Avatar images are publicly accessible"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'avatars');
+
+-- Allow authenticated users to upload their own avatars
+CREATE POLICY "Users can upload their own avatar"
+ON storage.objects FOR INSERT
+WITH CHECK (
+  bucket_id = 'avatars' AND
+  auth.uid()::text = (storage.foldername(name))[1]
+);
+
+-- Allow users to update their own avatars
+CREATE POLICY "Users can update their own avatar"
+ON storage.objects FOR UPDATE
+USING (
+  bucket_id = 'avatars' AND
+  auth.uid()::text = (storage.foldername(name))[1]
+);
+
+-- Allow users to delete their own avatars
+CREATE POLICY "Users can delete their own avatar"
+ON storage.objects FOR DELETE
+USING (
+  bucket_id = 'avatars' AND
+  auth.uid()::text = (storage.foldername(name))[1]
+);
+```
+</CodeGroup>
+
+### Anime Images Bucket Policies
+
+<CodeGroup>
+```sql Anime Images Policies
+-- Allow public read access
+CREATE POLICY "Anime images are publicly accessible"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'anime-images');
+
+-- Allow authenticated users to upload anime images
+CREATE POLICY "Authenticated users can upload anime images"
+ON storage.objects FOR INSERT
+WITH CHECK (
+  bucket_id = 'anime-images' AND
+  auth.role() = 'authenticated'
+);
+```
+</CodeGroup>
+
+### Review Images Bucket Policies
+
+<CodeGroup>
+```sql Review Images Policies
+-- Allow public read access
+CREATE POLICY "Review images are publicly accessible"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'review-images');
+
+-- Allow authenticated users to upload review images
+CREATE POLICY "Authenticated users can upload review images"
+ON storage.objects FOR INSERT
+WITH CHECK (
+  bucket_id = 'review-images' AND
+  auth.role() = 'authenticated'
+);
+```
+</CodeGroup>
+
+## Using Storage in Your App
+
+AniDojo provides helper functions in `src/lib/supabase/storage.ts`:
+
+### Upload Avatar Example
+
+```typescript
+import { uploadAvatar, deleteAvatar } from '@/lib/supabase/storage';
+import { createClient } from '@/lib/supabase/client';
+
+async function handleAvatarUpload(file: File, userId: string) {
+  try {
+    // Upload the avatar
+    const avatarUrl = await uploadAvatar(userId, file);
+    
+    // Update profile in database
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('profiles')
+      .update({ avatar_url: avatarUrl })
+      .eq('id', userId);
+    
+    if (error) throw error;
+    
+    return avatarUrl;
+  } catch (error) {
+    console.error('Error uploading avatar:', error);
+    throw error;
+  }
+}
+```
+
+### Upload Generic File
+
+```typescript
+import { uploadFile, getPublicUrl, STORAGE_BUCKETS } from '@/lib/supabase/storage';
+
+async function uploadReviewImage(file: File) {
+  const fileName = `${Date.now()}-${file.name}`;
+  const filePath = `reviews/${fileName}`;
+  
+  try {
+    // Upload the file
+    await uploadFile(STORAGE_BUCKETS.REVIEW_IMAGES, filePath, file);
+    
+    // Get the public URL
+    const url = getPublicUrl(STORAGE_BUCKETS.REVIEW_IMAGES, filePath);
+    
+    return url;
+  } catch (error) {
+    console.error('Error uploading image:', error);
+    throw error;
+  }
+}
+```
+
+### Delete File
+
+```typescript
+import { deleteFile, STORAGE_BUCKETS } from '@/lib/supabase/storage';
+
+async function deleteReviewImage(filePath: string) {
+  try {
+    await deleteFile(STORAGE_BUCKETS.REVIEW_IMAGES, filePath);
+  } catch (error) {
+    console.error('Error deleting image:', error);
+    throw error;
+  }
+}
+```
+
+### List Files in Bucket
+
+```typescript
+import { listFiles, STORAGE_BUCKETS } from '@/lib/supabase/storage';
+
+async function getUserAvatars(userId: string) {
+  try {
+    const files = await listFiles(STORAGE_BUCKETS.AVATARS, userId, {
+      limit: 10,
+      sortBy: { column: 'created_at', order: 'desc' }
+    });
+    
+    return files;
+  } catch (error) {
+    console.error('Error listing files:', error);
+    throw error;
+  }
+}
+```
+
+## Storage Helper Functions Reference
+
+All storage functions are in `src/lib/supabase/storage.ts`:
+
+<Accordion title="uploadFile()">
+  Upload a file to any bucket (client-side):
+  
+  ```typescript
+  uploadFile(
+    bucket: string,
+    path: string,
+    file: File,
+    options?: {
+      cacheControl?: string;
+      contentType?: string;
+      upsert?: boolean;
+    }
+  )
+  ```
+</Accordion>
+
+<Accordion title="uploadFileServer()">
+  Upload a file from server-side code:
+  
+  ```typescript
+  uploadFileServer(
+    bucket: string,
+    path: string,
+    file: File | Buffer,
+    options?: {
+      cacheControl?: string;
+      contentType?: string;
+      upsert?: boolean;
+    }
+  )
+  ```
+</Accordion>
+
+<Accordion title="getPublicUrl()">
+  Get the public URL for a file:
+  
+  ```typescript
+  getPublicUrl(bucket: string, path: string): string
+  ```
+</Accordion>
+
+<Accordion title="getSignedUrl()">
+  Get a temporary signed URL (for private files):
+  
+  ```typescript
+  getSignedUrl(
+    bucket: string,
+    path: string,
+    expiresIn: number = 3600
+  ): Promise<string>
+  ```
+</Accordion>
+
+<Accordion title="deleteFile()">
+  Delete a file from storage:
+  
+  ```typescript
+  deleteFile(bucket: string, path: string): Promise<void>
+  ```
+</Accordion>
+
+<Accordion title="uploadAvatar()">
+  Convenience function for avatar uploads:
+  
+  ```typescript
+  uploadAvatar(userId: string, file: File): Promise<string>
+  ```
+  
+  Returns the public URL of the uploaded avatar.
+</Accordion>
+
+<Accordion title="deleteAvatar()">
+  Delete a user's avatar by URL:
+  
+  ```typescript
+  deleteAvatar(userId: string, avatarUrl: string): Promise<void>
+  ```
+</Accordion>
+
+## Storage Bucket Constants
+
+```typescript
+import { STORAGE_BUCKETS } from '@/lib/supabase/storage';
+
+// Available buckets:
+STORAGE_BUCKETS.AVATARS        // 'avatars'
+STORAGE_BUCKETS.ANIME_IMAGES   // 'anime-images'
+STORAGE_BUCKETS.REVIEW_IMAGES  // 'review-images'
+```
+
+## File Upload Best Practices
+
+<Warning>
+  **Always validate files before uploading:**
+  - Check file size limits
+  - Verify MIME type
+  - Sanitize file names
+  - Handle errors gracefully
+</Warning>
+
+### Client-Side Validation Example
+
+```typescript
+function validateImageFile(file: File): { valid: boolean; error?: string } {
+  // Check file size (5MB limit for avatars)
+  const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+  if (file.size > maxSize) {
+    return { valid: false, error: 'File size must be less than 5MB' };
+  }
+  
+  // Check file type
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+  if (!allowedTypes.includes(file.type)) {
+    return { valid: false, error: 'File must be JPEG, PNG, WebP, or GIF' };
+  }
+  
+  return { valid: true };
+}
+
+// Usage
+const validation = validateImageFile(file);
+if (!validation.valid) {
+  alert(validation.error);
+  return;
+}
+```
+
+## Testing Storage Setup
+
+Test your storage configuration:
+
+<Steps>
+  <Step title="Upload a test file">
+    Use the Supabase dashboard to manually upload a test image to the `avatars` bucket.
+  </Step>
+
+  <Step title="Verify public access">
+    Get the public URL and open it in your browser to verify the image loads.
+  </Step>
+
+  <Step title="Test policy enforcement">
+    Try uploading to another user's folder - it should be rejected by RLS policies.
+  </Step>
+
+  <Step title="Test from your app">
+    Use the `uploadAvatar()` function in your app to upload a real profile picture.
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+### Upload fails with "Policy violation"
+
+- Verify the user is authenticated
+- Check the file path matches the policy (e.g., `{user_id}/filename.jpg`)
+- Confirm storage policies are created correctly
+- View detailed error in browser console
+
+### Image doesn't load
+
+- Verify the bucket is set to **Public**
+- Check the file exists in: **Storage** → **avatars**
+- Confirm the URL format is correct
+- Check browser console for CORS errors
+
+### File size limit exceeded
+
+- Configure bucket file size limit in: **Storage** → **Policies** → **Configuration**
+- Implement client-side validation before upload
+- Consider image compression before upload
+
+### Wrong MIME type
+
+- Set allowed MIME types in bucket configuration
+- Validate file type on client side before upload
+- Check the `Content-Type` header in the upload request
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication Setup" icon="lock" href="/setup/authentication">
+    Configure user authentication and email templates
+  </Card>
+  <Card title="API Integration" icon="link" href="/setup/api-integration">
+    Connect to the Jikan anime API
+  </Card>
+</CardGroup>
+
+## Resources
+
+- [Supabase Storage Documentation](https://supabase.com/docs/guides/storage)
+- [Storage Security Policies](https://supabase.com/docs/guides/storage/security/access-control)
+- [Storage Image Transformations](https://supabase.com/docs/guides/storage/image-transformations)

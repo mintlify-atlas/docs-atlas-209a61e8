@@ -1,0 +1,475 @@
+---
+title: 'Lists & Tracking'
+description: 'Organize your anime collection with personal lists, tracking, and progress management'
+icon: 'list-check'
+---
+
+## Overview
+
+AniDojo's list system lets you organize, track, and manage your entire anime collection. Keep track of what you're watching, what you've completed, and what you plan to watch next—all synced across devices.
+
+<Info>
+  Lists sync in real-time using Supabase, so your progress is never lost.
+</Info>
+
+## List Categories
+
+<CardGroup cols={2}>
+  <Card title="Watching" icon="play" iconType="solid">
+    Currently watching anime with episode progress tracking
+  </Card>
+  <Card title="Completed" icon="check" iconType="solid">
+    Finished anime with completion dates and ratings
+  </Card>
+  <Card title="On Hold" icon="pause" iconType="solid">
+    Temporarily paused anime you plan to resume
+  </Card>
+  <Card title="Dropped" icon="x" iconType="solid">
+    Discontinued anime you stopped watching
+  </Card>
+  <Card title="Plan to Watch" icon="clock" iconType="solid">
+    Watchlist of anime you want to start
+  </Card>
+  <Card title="Custom Lists" icon="folder" iconType="solid">
+    Create custom collections for any purpose
+  </Card>
+</CardGroup>
+
+## Adding Anime to Lists
+
+<Steps>
+  <Step title="Find the Anime">
+    Search for anime using the search page or browse recommendations.
+  </Step>
+  
+  <Step title="Click Add to List">
+    Click the "Add" or "+" button on any anime card.
+  </Step>
+  
+  <Step title="Choose Status">
+    Select the appropriate list category:
+    - **Watching** if you're currently watching it
+    - **Plan to Watch** if you want to watch later
+    - **Completed** if you've already finished it
+  </Step>
+  
+  <Step title="Set Details (Optional)">
+    Add extra information:
+    - Episodes watched
+    - Your rating (1-10)
+    - Start/finish dates
+    - Personal notes
+    - Tags
+    - Priority level
+  </Step>
+  
+  <Step title="Save Entry">
+    Click "Save" to add the anime to your list.
+  </Step>
+</Steps>
+
+## Managing Your Lists
+
+### View Your Lists
+
+Navigate to **My Lists** from the main menu to see all your anime.
+
+#### Status Tabs
+
+Switch between categories using the tabs at the top:
+
+```
+[All (247)] [Watching (12)] [Completed (185)] [On Hold (8)] [Dropped (5)] [Plan to Watch (37)]
+```
+
+Each tab shows the count of anime in that category.
+
+### Search & Filter
+
+<Note>
+  The list search is instant and searches across titles, notes, and tags.
+</Note>
+
+#### Search Bar
+
+Find anime quickly by typing:
+- Anime title (English or Japanese)
+- Notes content
+- Tags
+- Studio or genre names
+
+#### Sort Options
+
+Organize your list by:
+- **Title (A-Z)**: Alphabetical order
+- **Title (Z-A)**: Reverse alphabetical
+- **Score (High to Low)**: Best rated first
+- **Score (Low to High)**: Lowest rated first
+- **Date Added**: Recently added first
+- **Last Updated**: Recently modified first
+- **Progress**: Most complete first
+
+### View Modes
+
+Choose your preferred layout:
+
+#### Cards View
+
+Visual grid layout showing:
+- Large cover art
+- Title and status badge
+- Episode progress bar
+- Star rating
+- Quick action buttons (View, Edit, +1 Episode)
+
+<Tip>
+  Cards view is best for browsing visually and tracking progress at a glance.
+</Tip>
+
+#### Table View
+
+Spreadsheet-style layout with columns:
+- Anime (thumbnail + title)
+- Type (TV, Movie, OVA, etc.)
+- Progress (X/Y episodes)
+- Score (visual stars)
+- Status (colored badge)
+- Date Added
+- Actions (View, Edit, Delete)
+
+<Tip>
+  Table view is ideal for bulk editing and sorting large collections.
+</Tip>
+
+#### Compact View
+
+Condensed list with:
+- Small thumbnail
+- Title and progress
+- Status badge
+- Quick actions
+
+Best for quickly scanning long lists.
+
+## Tracking Progress
+
+### Episode Tracking
+
+Mark episodes as watched:
+
+1. **Manual Entry**: Edit anime entry and update episode count
+2. **Quick +1 Button**: Click "+" button on anime card to increment by one
+3. **Bulk Update**: Edit multiple episodes at once
+
+<Note>
+  When you reach the final episode, status automatically changes to "Completed."
+</Note>
+
+### Progress Bar
+
+Visual indicator shows completion:
+
+```typescript
+// From ~/workspace/source/src/app/my-lists/page.tsx:797
+Progress: 12/26 episodes (46% complete)
+```
+
+Progress bars update in real-time as you watch.
+
+### Auto-Complete
+
+When episode count equals total episodes, AniDojo automatically:
+- Changes status to "Completed"
+- Sets finish date to today
+- Prompts for rating (if not rated)
+
+## Rating System
+
+### 10-Point Scale
+
+Rate anime from 1-10 using visual stars:
+
+```
+★★★★★★★★★★ (10/10) - Masterpiece
+★★★★★★★★★☆ (9/10) - Excellent  
+★★★★★★★★☆☆ (8/10) - Very Good
+★★★★★★★☆☆☆ (7/10) - Good
+★★★★★★☆☆☆☆ (6/10) - Fine
+★★★★★☆☆☆☆☆ (5/10) - Average
+```
+
+<Tip>
+  Your ratings feed into statistics and AI recommendations. Rate honestly to get better suggestions!
+</Tip>
+
+### When to Rate
+
+You can rate anime:
+- Before watching (based on trailer/reputation)
+- While watching (update as you progress)
+- After completing (final rating)
+- At any time (edit anytime)
+
+## List Statistics
+
+View detailed stats about your collection:
+
+<Steps>
+  <Step title="Click Stats Button">
+    In the toolbar, click "Stats" to open the sidebar panel.
+  </Step>
+  
+  <Step title="View Overview">
+    See four key metrics:
+    - Total Anime
+    - Episodes Watched
+    - Days Watched
+    - Mean Score
+  </Step>
+  
+  <Step title="Status Breakdown">
+    View distribution across statuses:
+    - Watching: 12 anime
+    - Completed: 185 anime
+    - On Hold: 8 anime
+    - Dropped: 5 anime
+    - Plan to Watch: 37 anime
+  </Step>
+</Steps>
+
+### Statistics Calculated
+
+```typescript
+// From ~/workspace/source/src/app/my-lists/page.tsx:299
+const calculateStats = (entries: AnimeEntry[]): ListStats => {
+  const totalAnime = entries.length;
+  const episodesWatched = entries.reduce((sum, entry) => sum + entry.episodesWatched, 0);
+  const daysWatched = Math.round(episodesWatched * 24 / 1440);
+  const meanScore = ratedEntries.reduce((sum, entry) => sum + (entry.score || 0), 0) / ratedEntries.length;
+  // ...
+}
+```
+
+## Advanced Features
+
+### Bulk Edit Mode
+
+Edit multiple anime at once:
+
+<Steps>
+  <Step title="Enable Bulk Edit">
+    Click "Bulk Edit" in the toolbar. Checkboxes appear on all entries.
+  </Step>
+  
+  <Step title="Select Entries">
+    Click checkboxes to select anime (or "Select All").
+  </Step>
+  
+  <Step title="Choose Action">
+    Available bulk actions:
+    - Change Status
+    - Add Tags  
+    - Set Priority
+    - Delete
+  </Step>
+  
+  <Step title="Apply Changes">
+    Click "Apply" to update all selected entries.
+  </Step>
+</Steps>
+
+<Warning>
+  Bulk delete is permanent and cannot be undone. Make sure you select the correct entries.
+</Warning>
+
+### Tags & Organization
+
+Add custom tags to organize anime:
+
+- **Genre Tags**: "Mecha", "Isekai", "Sports"
+- **Mood Tags**: "Feel-good", "Dark", "Intense"
+- **Viewing Tags**: "Rewatching", "With Friends", "Dubbed"
+- **Priority Tags**: "Must Watch", "Low Priority"
+
+<Tip>
+  Tags are searchable! Type "#tag-name" in the search bar to filter by tag.
+</Tip>
+
+### Personal Notes
+
+Add private notes to any anime entry:
+
+- Thoughts and impressions
+- Episode highlights
+- Questions or predictions
+- Recommendations to share
+- Watch context (when/where/with whom)
+
+<Note>
+  Notes are private and only visible to you. Use them freely for personal tracking.
+</Note>
+
+### Custom Lists
+
+Create themed collections:
+
+1. Click "Create Custom List"
+2. Name your list (e.g., "Best Romance", "Summer 2024")
+3. Add description (optional)
+4. Set privacy (Public/Private)
+5. Add anime to the list
+
+<Info>
+  Custom lists can include anime from any status category. Perfect for creating themed collections or ranking lists.
+</Info>
+
+## Import & Export
+
+### Import from MAL
+
+Import your existing MyAnimeList:
+
+<Steps>
+  <Step title="Export from MAL">
+    On MyAnimeList, export your list as XML or JSON.
+  </Step>
+  
+  <Step title="Click Import">
+    In AniDojo, navigate to My Lists → Import.
+  </Step>
+  
+  <Step title="Upload File">
+    Select your exported MAL file.
+  </Step>
+  
+  <Step title="Map Fields">
+    Confirm field mappings (status, score, episodes).
+  </Step>
+  
+  <Step title="Import">
+    Click "Import" to add entries to your lists.
+  </Step>
+</Steps>
+
+### Export Your Data
+
+Download your AniDojo lists:
+
+```typescript
+// From ~/workspace/source/src/app/my-lists/page.tsx:1093
+const dataStr = JSON.stringify(animeEntries, null, 2);
+const dataBlob = new Blob([dataStr], { type: 'application/json' });
+link.download = 'my-anime-list.json';
+```
+
+Click "Export Lists" to download as JSON. Use for:
+- Backup
+- Importing to other services
+- Data analysis
+- Sharing with friends
+
+<Tip>
+  Export your lists regularly as backup! While AniDojo syncs to the cloud, it's always good to have a local copy.
+</Tip>
+
+## Quick Actions
+
+### Watch Next Episode
+
+For anime you're watching, click the "+" button to:
+- Increment episode count by 1
+- Update last watched date
+- Auto-complete if final episode
+
+### Quick Edit Modal
+
+Click "Edit" on any anime for fast updates:
+
+<CardGroup cols={2}>
+  <Card title="Status" icon="list">
+    Change between Watching, Completed, On Hold, etc.
+  </Card>
+  <Card title="Episodes" icon="play">
+    Update episode count with number input
+  </Card>
+  <Card title="Rating" icon="star">
+    Rate using slider or star selector
+  </Card>
+  <Card title="Notes" icon="note-sticky">
+    Quick note entry (500 character limit)
+  </Card>
+</CardGroup>
+
+Changes save instantly.
+
+## Favorite Anime
+
+Mark anime as favorites:
+
+1. Edit anime entry
+2. Check "Add to Favorites"
+3. Save changes
+
+Favorites appear:
+- In your profile's Favorites section
+- Highlighted in your lists (heart icon)
+- In search results (if filtering)
+
+<Tip>
+  Limit favorites to 10-20 anime for best curation. These represent your absolute top picks!
+</Tip>
+
+## Priority Levels
+
+Set priority for Plan to Watch anime:
+
+- **High**: Watch soon
+- **Medium**: Standard priority
+- **Low**: Watch eventually
+
+Sort by priority to see what to watch next.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Write Reviews" icon="pen" href="/features/reviews">
+    Review anime from your completed list
+  </Card>
+  <Card title="View Profile" icon="user" href="/features/user-profiles">
+    See your stats and achievements
+  </Card>
+  <Card title="Get Recommendations" icon="sparkles" href="/features/ai-discovery">
+    Find new anime based on your lists
+  </Card>
+  <Card title="Search Anime" icon="search" href="/features/anime-search">
+    Discover more anime to add to your lists
+  </Card>
+</CardGroup>
+
+## Tips & Best Practices
+
+<Tip>
+  **Stay Organized**: Update your lists regularly. Mark episodes watched soon after viewing for accurate stats.
+</Tip>
+
+<Tip>
+  **Use Tags**: Tag anime for easy filtering. Create tags like "#rewatch", "#favorites", "#seasonal" to organize your collection.
+</Tip>
+
+<Tip>
+  **Rate Everything**: Rating anime improves recommendations. Even a quick 1-10 rating helps the AI understand your tastes.
+</Tip>
+
+<Tip>
+  **Notes Are Private**: Don't be shy! Use notes freely for personal tracking, theories, or reminders.
+</Tip>
+
+## Troubleshooting
+
+<Warning>
+  **Duplicate anime in lists**: AniDojo prevents duplicates automatically. If you try to add an anime that's already in your lists, you'll be prompted to edit the existing entry instead.
+</Warning>
+
+<Note>
+  **Progress not saving**: Make sure you click "Save" after editing. Changes don't auto-save to prevent accidental updates.
+</Note>

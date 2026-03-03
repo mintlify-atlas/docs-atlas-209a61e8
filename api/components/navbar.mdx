@@ -1,0 +1,363 @@
+---
+title: Navigation Components
+description: Navbar and AuthNavbar components for site navigation
+---
+
+AniDojo provides two navigation components: `Navbar` for general navigation and `AuthNavbar` for pre-authentication pages with integrated search.
+
+## Navbar
+
+Standard navigation component with responsive mobile menu and scroll-based styling.
+
+### Import
+
+```tsx
+import Navbar from '@/components/Navbar';
+```
+
+### Props
+
+No props required - fully self-contained component.
+
+### Features
+
+- **Fixed Positioning**: Stays at top of viewport with `fixed` positioning
+- **Scroll-Based Styling**: Background becomes opaque with backdrop blur on scroll
+- **Responsive Menu**: Hamburger menu for mobile, horizontal nav for desktop
+- **Search Integration**: Built-in search input (desktop) or button (mobile)
+- **Animation**: Smooth transitions for menu and scroll effects
+
+### Usage
+
+<CodeGroup>
+
+```tsx Layout Integration
+import Navbar from '@/components/Navbar';
+
+export default function RootLayout({ children }) {
+  return (
+    <html>
+      <body>
+        <Navbar />
+        <main className="pt-20">{children}</main>
+      </body>
+    </html>
+  );
+}
+```
+
+```tsx Page Integration
+import Navbar from '@/components/Navbar';
+
+export default function HomePage() {
+  return (
+    <>
+      <Navbar />
+      <div className="pt-20">
+        {/* Page content */}
+      </div>
+    </>
+  );
+}
+```
+
+</CodeGroup>
+
+### Navigation Links
+
+The component includes these default navigation items:
+
+```tsx
+const navItems = ['BROWSE', 'LISTS', 'MEMBERS', 'JOURNAL'];
+```
+
+Each item links to `/${item.toLowerCase()}`:
+- BROWSE → `/browse`
+- LISTS → `/lists`
+- MEMBERS → `/members`
+- JOURNAL → `/journal`
+
+### Scroll Behavior
+
+The navbar changes appearance based on scroll position:
+
+```tsx
+const [scrolled, setScrolled] = useState(false);
+
+useEffect(() => {
+  const handleScroll = () => {
+    setScrolled(window.scrollY > 20);
+  };
+  
+  window.addEventListener('scroll', handleScroll);
+  return () => window.removeEventListener('scroll', handleScroll);
+}, []);
+```
+
+**States**:
+- Not scrolled: `bg-transparent`
+- Scrolled (>20px): `bg-ink/95 backdrop-blur-sm shadow-ink`
+
+### Mobile Menu
+
+Full-screen overlay menu with slide-in animation:
+
+```tsx
+<div className={`
+  fixed inset-0 bg-ink z-10
+  transform transition-transform duration-300
+  ${isMenuOpen ? 'translate-y-0' : '-translate-y-full'}
+`}>
+  {/* Menu content */}
+</div>
+```
+
+**Auto-close**: Menu automatically closes when window is resized to desktop size (≥768px).
+
+### Source Reference
+
+Source code: `~/workspace/source/src/components/Navbar.tsx:1-112`
+
+---
+
+## AuthNavbar
+
+Authentication-focused navigation with GlobalSearch integration for landing and auth pages.
+
+### Import
+
+```tsx
+import AuthNavbar from '@/components/AuthNavbar';
+```
+
+### Props
+
+No props required - fully self-contained component.
+
+### Features
+
+- **GlobalSearch Integration**: Uses `GlobalSearch` component instead of basic input
+- **Auth-Focused Links**: Sign In, Create Account, and Browse
+- **Gradient Background**: Subtle gradient from ink to transparent when not scrolled
+- **Mobile-First Logo**: Logo only appears on mobile, maximizing desktop space for search
+
+### Usage
+
+<CodeGroup>
+
+```tsx Landing Page
+import AuthNavbar from '@/components/AuthNavbar';
+
+export default function LandingPage() {
+  return (
+    <>
+      <AuthNavbar />
+      <main>
+        {/* Landing content */}
+      </main>
+    </>
+  );
+}
+```
+
+```tsx Auth Pages
+import AuthNavbar from '@/components/AuthNavbar';
+
+export default function SignInPage() {
+  return (
+    <>
+      <AuthNavbar />
+      <div className="pt-20">
+        {/* Sign in form */}
+      </div>
+    </>
+  );
+}
+```
+
+</CodeGroup>
+
+### Navigation Links
+
+Auth-specific navigation structure:
+
+```tsx
+const navItems = [
+  { href: '/signin', label: 'SIGN IN' },
+  { href: '/signup', label: 'CREATE ACCOUNT' },
+  { href: '/browse', label: 'BROWSE' },
+];
+```
+
+### Background Styling
+
+Dynamic background based on scroll state:
+
+<Tabs>
+  <Tab title="Not Scrolled">
+    ```tsx
+    <div className="absolute inset-0 bg-gradient-to-b from-ink to-transparent" />
+    ```
+    Creates a subtle gradient fade effect
+  </Tab>
+  <Tab title="Scrolled">
+    ```tsx
+    <div className="absolute inset-0 bg-ink/95 backdrop-blur-sm" />
+    ```
+    Solid background with backdrop blur
+  </Tab>
+</Tabs>
+
+### Search Integration
+
+Integrates `GlobalSearch` component for full autocomplete functionality:
+
+<CodeGroup>
+
+```tsx Desktop
+<div className="hidden md:flex items-center space-x-4">
+  <GlobalSearch className="w-48 lg:w-64" />
+</div>
+```
+
+```tsx Mobile
+<div className="relative mt-12 w-4/5 max-w-sm">
+  <GlobalSearch className="w-full" />
+</div>
+```
+
+</CodeGroup>
+
+See [GlobalSearch documentation](/api/components/search#globalsearch) for search features.
+
+### Source Reference
+
+Source code: `~/workspace/source/src/components/AuthNavbar.tsx:1-103`
+
+---
+
+## Styling System
+
+Both navbar components use AniDojo's custom theme colors:
+
+### Color Palette
+
+<ParamField path="ink" type="color">
+  Dark background color (main background)
+</ParamField>
+
+<ParamField path="cream" type="color">
+  Light text color (primary text)
+</ParamField>
+
+<ParamField path="crimson-bright" type="color">
+  Accent color for hover states
+</ParamField>
+
+### Common Classes
+
+```css
+.nav-link {
+  /* Custom link styling defined in global CSS */
+  transition: color 0.2s;
+}
+
+.shadow-ink {
+  /* Custom shadow using ink color */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+```
+
+## Animation Patterns
+
+Both components use consistent animation patterns:
+
+### Mobile Menu Animation
+
+```tsx
+// Slide in from top
+className="transform transition-transform duration-300 ease-out
+  ${isMenuOpen ? 'translate-y-0' : '-translate-y-full'}"
+```
+
+### Staggered Link Animation
+
+```tsx
+{navItems.map((item, index) => (
+  <Link
+    className={`animate-slide-up stagger-${index + 1}`}
+  >
+    {item}
+  </Link>
+))}
+```
+
+## Comparison
+
+<Tabs>
+  <Tab title="Navbar">
+    **Best for:**
+    - Authenticated user pages
+    - Main application navigation
+    - Content browsing pages
+
+    **Features:**
+    - Full navigation menu (Browse, Lists, Members, Journal)
+    - Basic search input
+    - Simpler structure
+  </Tab>
+  <Tab title="AuthNavbar">
+    **Best for:**
+    - Landing pages
+    - Sign in/sign up pages
+    - Pre-authentication flows
+
+    **Features:**
+    - Auth-focused links (Sign In, Create Account, Browse)
+    - GlobalSearch integration
+    - Gradient background effect
+    - Mobile logo display
+  </Tab>
+</Tabs>
+
+## Best Practices
+
+### Layout Spacing
+
+Both navbars are fixed position, so add padding to your main content:
+
+```tsx
+<body>
+  <Navbar />
+  <main className="pt-20"> {/* Account for navbar height */}
+    {children}
+  </main>
+</body>
+```
+
+### Responsive Testing
+
+Test at these breakpoints:
+- Mobile: < 768px (menu button shows)
+- Desktop: ≥ 768px (horizontal nav shows)
+
+### Z-Index Layering
+
+```tsx
+// Navbar structure
+header       z-50   // Header container
+  logo       z-20   // Logo (mobile)
+  menu       z-10   // Mobile menu overlay
+  controls   z-20   // Mobile controls
+```
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="GlobalSearch" href="/api/components/search#globalsearch">
+    Search component used in AuthNavbar
+  </Card>
+  <Card title="Theme System" href="/api/components/theme">
+    Theme colors and styling
+  </Card>
+</CardGroup>

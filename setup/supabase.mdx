@@ -1,0 +1,193 @@
+---
+title: 'Supabase Project Setup'
+description: 'Set up your Supabase project for AniDojo authentication, database, and storage'
+icon: 'cloud'
+---
+
+## Overview
+
+AniDojo uses Supabase as its backend platform, providing authentication, PostgreSQL database, and file storage. This guide walks you through creating and configuring your Supabase project.
+
+## Prerequisites
+
+- A Supabase account ([Sign up for free](https://supabase.com))
+- Node.js 18+ installed
+- Basic familiarity with SQL and environment variables
+
+## Create Your Supabase Project
+
+<Steps>
+  <Step title="Sign in to Supabase">
+    Navigate to [supabase.com](https://supabase.com) and sign in to your account.
+  </Step>
+
+  <Step title="Create a new project">
+    Click **New Project** and fill in the details:
+    
+    - **Name**: `anidojo` (or your preferred name)
+    - **Database Password**: Generate a strong password (save this!)
+    - **Region**: Choose the region closest to your users
+    - **Pricing Plan**: Free tier works great for development
+  </Step>
+
+  <Step title="Wait for provisioning">
+    Your project will take 1-2 minutes to set up. Grab a coffee while Supabase provisions your database!
+  </Step>
+</Steps>
+
+## Get Your API Credentials
+
+Once your project is ready, you'll need to retrieve your API credentials.
+
+<Steps>
+  <Step title="Navigate to API Settings">
+    In your Supabase dashboard, go to **Settings** → **API**
+  </Step>
+
+  <Step title="Copy your credentials">
+    You'll need two values:
+    
+    - **Project URL**: `https://xxxxxxxxxxxxx.supabase.co`
+    - **anon public key**: A long JWT token starting with `eyJ...`
+  </Step>
+</Steps>
+
+<Warning>
+  Never commit your `service_role` key to version control. Only use the `anon` key in your frontend code.
+</Warning>
+
+## Configure Environment Variables
+
+Add your Supabase credentials to your Next.js application.
+
+<Steps>
+  <Step title="Copy the example environment file">
+    ```bash
+    cp .env.example .env.local
+    ```
+  </Step>
+
+  <Step title="Add your credentials">
+    Open `.env.local` and add your Supabase credentials:
+    
+    ```bash .env.local
+    NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxxx.supabase.co
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+    ```
+  </Step>
+
+  <Step title="Restart your development server">
+    Environment variables are loaded at startup. Restart your dev server:
+    
+    ```bash
+    npm run dev
+    ```
+  </Step>
+</Steps>
+
+<Note>
+  The `NEXT_PUBLIC_` prefix makes these variables available in the browser. This is safe for the `anon` key, which is designed for client-side use.
+</Note>
+
+## Verify Your Connection
+
+Test that your application can connect to Supabase:
+
+```typescript
+import { createClient } from '@/lib/supabase/client';
+
+const supabase = createClient();
+
+// Test the connection
+const { data, error } = await supabase.auth.getSession();
+
+if (error) {
+  console.error('Connection failed:', error);
+} else {
+  console.log('Connected to Supabase!');
+}
+```
+
+## Supabase Client Architecture
+
+AniDojo uses different Supabase clients depending on the context:
+
+<Accordion title="Client-Side Browser Client">
+  Used in React components and client-side code:
+  
+  ```typescript
+  import { createClient } from '@/lib/supabase/client';
+  
+  export function MyComponent() {
+    const supabase = createClient();
+    // Use supabase client...
+  }
+  ```
+  
+  Located in: `src/lib/supabase/client.ts`
+</Accordion>
+
+<Accordion title="Server-Side Server Client">
+  Used in Server Components, API routes, and Server Actions:
+  
+  ```typescript
+  import { createClient } from '@/lib/supabase/server';
+  
+  export async function ServerComponent() {
+    const supabase = await createClient();
+    // Use supabase client...
+  }
+  ```
+  
+  Located in: `src/lib/supabase/server.ts`
+</Accordion>
+
+<Accordion title="Middleware Client">
+  Used in Next.js middleware for session management:
+  
+  Located in: `src/lib/supabase/middleware.ts`
+</Accordion>
+
+## Next Steps
+
+Now that your Supabase project is set up, you can:
+
+<CardGroup cols={2}>
+  <Card title="Database Schema" icon="database" href="/setup/database">
+    Set up your database tables and migrations
+  </Card>
+  <Card title="Authentication" icon="lock" href="/setup/authentication">
+    Configure user authentication and providers
+  </Card>
+  <Card title="Storage Buckets" icon="folder" href="/setup/storage">
+    Create storage buckets for avatars and images
+  </Card>
+  <Card title="API Integration" icon="link" href="/setup/api-integration">
+    Connect to the Jikan anime API
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+### "Invalid API key" error
+
+- Verify your `.env.local` file has the correct values
+- Make sure you copied the **anon** key, not the service_role key
+- Restart your development server after changing environment variables
+
+### Connection timeout
+
+- Check your internet connection
+- Verify your Supabase project is active (not paused)
+- Confirm the Project URL is correct
+
+### CORS errors
+
+- Ensure you're using the client-side client (`@/lib/supabase/client`) in browser code
+- Use the server-side client (`@/lib/supabase/server`) in API routes and Server Components
+
+## Resources
+
+- [Supabase Documentation](https://supabase.com/docs)
+- [Supabase Next.js Guide](https://supabase.com/docs/guides/getting-started/quickstarts/nextjs)
+- [Supabase Auth Helpers](https://supabase.com/docs/guides/auth/auth-helpers/nextjs)

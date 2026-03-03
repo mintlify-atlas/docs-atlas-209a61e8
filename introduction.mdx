@@ -1,0 +1,202 @@
+---
+title: Welcome to AniDojo
+description: Your ultimate anime tracking, discovery, and review platform
+---
+
+<img
+  className="block dark:hidden"
+  src="/images/hero-light.svg"
+  alt="AniDojo Hero Light"
+/>
+<img
+  className="hidden dark:block"
+  src="/images/hero-dark.svg"
+  alt="AniDojo Hero Dark"
+/>
+
+# Welcome to AniDojo
+
+AniDojo is a full-stack anime tracking, discovery, and review platform that helps you organize your anime journey, discover new series, and connect with fellow anime fans.
+
+Built with modern web technologies including Next.js 15, React 19, Supabase, and the Jikan API (MyAnimeList), AniDojo provides a seamless experience for managing your anime collection and sharing your thoughts with the community.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card
+    title="Anime Tracking & Lists"
+    icon="list-check"
+    href="/features/lists-tracking"
+  >
+    Track your watching progress with customizable lists. Organize anime by status (Watching, Completed, Plan to Watch, On Hold, Dropped) with episode tracking and personal ratings.
+  </Card>
+  
+  <Card
+    title="AI-Powered Recommendations"
+    icon="sparkles"
+    href="/features/ai-discovery"
+  >
+    Discover your next favorite anime with intelligent recommendations based on your viewing history, ratings, and preferences.
+  </Card>
+  
+  <Card
+    title="Reviews & Ratings"
+    icon="star"
+    href="/features/reviews"
+  >
+    Share detailed reviews with multi-dimensional ratings (Story, Animation, Sound, Character, Enjoyment). Vote on helpful reviews and engage with the community.
+  </Card>
+  
+  <Card
+    title="Real-time Discovery"
+    icon="compass"
+    href="/features/anime-search"
+  >
+    Browse top-rated anime, current season releases, and trending series. Powered by the Jikan API with comprehensive MyAnimeList data.
+  </Card>
+</CardGroup>
+
+## Platform Highlights
+
+<Tabs>
+  <Tab title="List Management">
+    ### Powerful Anime Organization
+    
+    - **Multiple List Views**: Switch between card, table, and compact views
+    - **Status Tracking**: Watching, Completed, Plan to Watch, On Hold, Dropped
+    - **Episode Progress**: Track episodes watched with progress bars
+    - **Rating System**: 10-point rating scale with star visualization
+    - **Custom Lists**: Create and share custom anime collections
+    - **Tags & Notes**: Add personal notes and custom tags to entries
+    - **Import/Export**: Backup your lists or migrate from other platforms
+    
+    View your list statistics including total anime, episodes watched, mean score, and genre distribution.
+  </Tab>
+  
+  <Tab title="Discovery">
+    ### Find Your Next Anime
+    
+    - **Search**: Powerful search across 20,000+ anime titles
+    - **Browse Top Anime**: Explore highest-rated series of all time
+    - **Current Season**: Stay updated with ongoing releases
+    - **Trending**: See what's popular in the community
+    - **Filters**: Search by genre, year, type, and status
+    - **AI Recommendations**: Personalized suggestions based on your taste
+    
+    All anime data is sourced from MyAnimeList through the Jikan API.
+  </Tab>
+  
+  <Tab title="Reviews">
+    ### Share Your Thoughts
+    
+    - **Multi-dimensional Ratings**: Rate Story, Animation, Sound, Character, and Enjoyment separately
+    - **Rich Text Reviews**: Write detailed reviews with spoiler warnings
+    - **Pros & Cons**: Structure your review with clear strengths and weaknesses
+    - **Recommendations**: Add recommendation levels (Highly Recommend to Strongly Not Recommend)
+    - **Draft System**: Save drafts and publish when ready
+    - **Community Voting**: Mark reviews as helpful or unhelpful
+    - **Comments**: Engage in discussions on reviews
+    
+    One published review per anime per user ensures quality content.
+  </Tab>
+  
+  <Tab title="Community">
+    ### Connect With Fans
+    
+    - **Public Profiles**: Share your anime journey with custom bios and avatars
+    - **Public Lists**: Make your lists visible to the community
+    - **Review Feed**: Discover what others are watching and reviewing
+    - **Voting System**: Help surface the best reviews
+    - **Comments & Replies**: Engage in threaded discussions
+    
+    Row Level Security ensures your data privacy while enabling community features.
+  </Tab>
+</Tabs>
+
+## Technology Stack
+
+<CardGroup cols={3}>
+  <Card title="Frontend" icon="react">
+    - Next.js 15 with App Router
+    - React 19 with Server Components
+    - TypeScript for type safety
+    - Tailwind CSS for styling
+    - Lucide React for icons
+  </Card>
+  
+  <Card title="Backend" icon="database">
+    - Supabase for authentication
+    - PostgreSQL database
+    - Row Level Security (RLS)
+    - Real-time subscriptions
+    - Storage for avatars
+  </Card>
+  
+  <Card title="External APIs" icon="plug">
+    - Jikan API v4 (MyAnimeList)
+    - Rate-limited requests
+    - Response caching
+    - Automatic retries
+  </Card>
+</CardGroup>
+
+## Database Schema
+
+AniDojo uses a comprehensive PostgreSQL schema with the following tables:
+
+- **profiles**: User profiles extending Supabase Auth
+- **anime_entries**: User's anime lists with tracking data
+- **reviews**: Detailed anime reviews with multi-dimensional ratings
+- **review_votes**: Helpful/unhelpful votes on reviews
+- **comments**: Threaded comments on reviews
+- **comment_votes**: Upvote/downvote on comments
+- **custom_lists**: User-created custom lists
+- **custom_list_entries**: Anime entries in custom lists
+
+All tables have Row Level Security policies to protect user data.
+
+## Quick Links
+
+<CardGroup cols={2}>
+  <Card
+    title="Quick Start Guide"
+    icon="rocket"
+    href="/quickstart"
+  >
+    Get started with AniDojo in minutes. Create your account and add your first anime.
+  </Card>
+  
+  <Card
+    title="Developer Setup"
+    icon="code"
+    href="/installation"
+  >
+    Set up the development environment for contributing to AniDojo.
+  </Card>
+  
+  <Card
+    title="Features Overview"
+    icon="book-open"
+    href="/features/anime-search"
+  >
+    Explore all features in detail with screenshots and examples.
+  </Card>
+  
+  <Card
+    title="API Reference"
+    icon="brackets"
+    href="/api/anime/overview"
+  >
+    Learn about the Jikan API integration and data structures.
+  </Card>
+</CardGroup>
+
+## Need Help?
+
+<Note>
+  New to AniDojo? Start with the [Quick Start Guide](/quickstart) to create your account and add your first anime to your list.
+</Note>
+
+<Warning>
+  This documentation covers both user features and developer setup. Make sure you're reading the right section for your needs.
+</Warning>

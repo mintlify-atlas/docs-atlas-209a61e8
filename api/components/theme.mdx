@@ -1,0 +1,565 @@
+---
+title: Theme System
+description: ThemeToggle component and ThemeContext for dark/light mode
+---
+
+AniDojo's theme system provides dark/light mode switching with system preference detection and persistent storage.
+
+## ThemeToggle
+
+A button component that toggles between light and dark themes using the theme context.
+
+### Import
+
+```tsx
+import ThemeToggle from '@/components/ThemeToggle';
+```
+
+### Props
+
+<ParamField path="className" type="string" default="''">
+  Optional CSS classes to apply to the button element
+</ParamField>
+
+### Features
+
+- **Animated Icons**: Sun icon for dark mode, Moon icon for light mode
+- **Hydration Safe**: Prevents hydration mismatches with mounting check
+- **Accessible**: Includes `aria-label` for screen readers
+- **Smooth Transitions**: Color transitions on hover and theme change
+
+### Usage
+
+<CodeGroup>
+
+```tsx Navbar Integration
+import ThemeToggle from '@/components/ThemeToggle';
+
+export default function Navbar() {
+  return (
+    <nav>
+      <div className="flex items-center gap-4">
+        <ThemeToggle />
+        {/* Other nav items */}
+      </div>
+    </nav>
+  );
+}
+```
+
+```tsx Custom Styling
+import ThemeToggle from '@/components/ThemeToggle';
+
+export default function Header() {
+  return (
+    <header>
+      <ThemeToggle className="hover:bg-gray-100 dark:hover:bg-gray-800" />
+    </header>
+  );
+}
+```
+
+```tsx Settings Page
+import ThemeToggle from '@/components/ThemeToggle';
+
+export default function Settings() {
+  return (
+    <div className="settings-panel">
+      <div className="flex items-center justify-between">
+        <label>Theme</label>
+        <ThemeToggle />
+      </div>
+    </div>
+  );
+}
+```
+
+</CodeGroup>
+
+### Hydration Safety
+
+The component uses a mounting state to prevent hydration mismatches:
+
+```tsx
+const [mounted, setMounted] = useState(false);
+
+useEffect(() => {
+  setMounted(true);
+}, []);
+
+if (!mounted) {
+  return <div className={`w-9 h-9 ${className}`} />;
+}
+```
+
+This ensures the server-rendered HTML matches the initial client render before showing the theme-dependent icon.
+
+### Icon States
+
+<Tabs>
+  <Tab title="Dark Mode">
+    ```tsx
+    <Sun className="w-5 h-5 text-yellow-400" />
+    ```
+    Shows sun icon when in dark mode (clicking switches to light)
+  </Tab>
+  <Tab title="Light Mode">
+    ```tsx
+    <Moon className="w-5 h-5 text-blue-400" />
+    ```
+    Shows moon icon when in light mode (clicking switches to dark)
+  </Tab>
+</Tabs>
+
+### Source Reference
+
+Source code: `~/workspace/source/src/components/ThemeToggle.tsx:1-34`
+
+---
+
+## ThemeContext
+
+React context providing theme state and controls throughout the application.
+
+### Import
+
+```tsx
+import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
+```
+
+### Provider Setup
+
+Wrap your app with `ThemeProvider` at the root level:
+
+<CodeGroup>
+
+```tsx app/layout.tsx
+import { ThemeProvider } from '@/contexts/ThemeContext';
+
+export default function RootLayout({ children }) {
+  return (
+    <html>
+      <body>
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+```tsx pages/_app.tsx
+import { ThemeProvider } from '@/contexts/ThemeContext';
+
+export default function App({ Component, pageProps }) {
+  return (
+    <ThemeProvider>
+      <Component {...pageProps} />
+    </ThemeProvider>
+  );
+}
+```
+
+</CodeGroup>
+
+### useTheme Hook
+
+Access theme state and controls in any component:
+
+```tsx
+import { useTheme } from '@/contexts/ThemeContext';
+
+export default function MyComponent() {
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  
+  return (
+    <div>
+      <p>Current theme: {theme}</p>
+      <p>Resolved theme: {resolvedTheme}</p>
+      <button onClick={() => setTheme('dark')}>Dark</button>
+      <button onClick={() => setTheme('light')}>Light</button>
+      <button onClick={() => setTheme('system')}>System</button>
+    </div>
+  );
+}
+```
+
+### Type Definition
+
+```tsx
+type Theme = 'light' | 'dark' | 'system';
+
+interface ThemeContextType {
+  theme: Theme;                    // Current theme setting
+  setTheme: (theme: Theme) => void; // Update theme
+  resolvedTheme: 'light' | 'dark';  // Actual theme in use
+}
+```
+
+### Return Values
+
+<ParamField path="theme" type="'light' | 'dark' | 'system'">
+  The user's theme preference setting
+</ParamField>
+
+<ParamField path="setTheme" type="(theme: Theme) => void">
+  Function to update the theme preference
+</ParamField>
+
+<ParamField path="resolvedTheme" type="'light' | 'dark'">
+  The actual theme being applied (resolves 'system' to 'light' or 'dark')
+</ParamField>
+
+### System Theme Detection
+
+The context automatically detects system theme preferences:
+
+```tsx
+const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+const handleChange = () => {
+  if (theme === 'system') {
+    setResolvedTheme(mediaQuery.matches ? 'dark' : 'light');
+  }
+};
+
+mediaQuery.addEventListener('change', handleChange);
+```
+
+**When theme is 'system'**:
+- `resolvedTheme` automatically updates based on OS preference
+- Listens for system theme changes in real-time
+
+### Persistence
+
+Theme preference is saved to localStorage:
+
+<ParamField path="anidojo_theme" type="'light' | 'dark' | 'system'">
+  localStorage key storing the user's theme preference
+</ParamField>
+
+```tsx
+// Save theme
+localStorage.setItem('anidojo_theme', theme);
+
+// Load theme on mount
+const savedTheme = localStorage.getItem('anidojo_theme');
+```
+
+### CSS Classes Applied
+
+The context applies these classes to `document.documentElement`:
+
+<Tabs>
+  <Tab title="Dark Theme">
+    ```tsx
+    // Applied classes
+    <html class="dark-theme dark">
+    ```
+    - `dark-theme` - Custom AniDojo dark theme class
+    - `dark` - Tailwind CSS dark mode class
+  </Tab>
+  <Tab title="Light Theme">
+    ```tsx
+    // Applied classes
+    <html class="light-theme">
+    ```
+    - `light-theme` - Custom AniDojo light theme class
+  </Tab>
+</Tabs>
+
+### Source Reference
+
+Source code: `~/workspace/source/src/contexts/ThemeContext.tsx:1-93`
+
+---
+
+## Complete Implementation
+
+Here's a full example implementing the theme system:
+
+<CodeGroup>
+
+```tsx app/layout.tsx
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import Navbar from '@/components/Navbar';
+import ThemeToggle from '@/components/ThemeToggle';
+
+export default function RootLayout({ children }) {
+  return (
+    <html>
+      <body>
+        <ThemeProvider>
+          <header className="flex items-center justify-between p-4">
+            <div>AniDojo</div>
+            <ThemeToggle />
+          </header>
+          <main>{children}</main>
+        </ThemeProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+```tsx components/CustomThemeSelector.tsx
+import { useTheme } from '@/contexts/ThemeContext';
+
+export default function CustomThemeSelector() {
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  
+  return (
+    <div className="theme-selector">
+      <h3>Choose Theme</h3>
+      
+      <div className="flex gap-2">
+        <button
+          onClick={() => setTheme('light')}
+          className={theme === 'light' ? 'active' : ''}
+        >
+          Light
+        </button>
+        
+        <button
+          onClick={() => setTheme('dark')}
+          className={theme === 'dark' ? 'active' : ''}
+        >
+          Dark
+        </button>
+        
+        <button
+          onClick={() => setTheme('system')}
+          className={theme === 'system' ? 'active' : ''}
+        >
+          System
+        </button>
+      </div>
+      
+      <p className="text-sm text-gray-600">
+        Active theme: {resolvedTheme}
+      </p>
+    </div>
+  );
+}
+```
+
+```tsx components/ThemeAwareComponent.tsx
+import { useTheme } from '@/contexts/ThemeContext';
+
+export default function ThemeAwareComponent() {
+  const { resolvedTheme } = useTheme();
+  
+  return (
+    <div className={`card ${resolvedTheme}-card`}>
+      {resolvedTheme === 'dark' ? (
+        <p>Dark theme content</p>
+      ) : (
+        <p>Light theme content</p>
+      )}
+    </div>
+  );
+}
+```
+
+</CodeGroup>
+
+## Styling with Theme
+
+### Tailwind Dark Mode
+
+Use Tailwind's `dark:` modifier with the theme system:
+
+```tsx
+<div className="bg-white text-black dark:bg-gray-900 dark:text-white">
+  Content adapts to theme
+</div>
+```
+
+### Custom CSS
+
+Target theme classes in your CSS:
+
+```css
+/* Light theme styles */
+.light-theme {
+  --background: #ffffff;
+  --foreground: #000000;
+}
+
+/* Dark theme styles */
+.dark-theme {
+  --background: #1a1a1a;
+  --foreground: #ffffff;
+}
+
+/* Use CSS variables */
+.card {
+  background: var(--background);
+  color: var(--foreground);
+}
+```
+
+### Conditional Rendering
+
+```tsx
+import { useTheme } from '@/contexts/ThemeContext';
+
+export default function Hero() {
+  const { resolvedTheme } = useTheme();
+  
+  return (
+    <div>
+      {resolvedTheme === 'dark' ? (
+        <img src="/hero-dark.jpg" alt="Hero" />
+      ) : (
+        <img src="/hero-light.jpg" alt="Hero" />
+      )}
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+### Provider Placement
+
+Place `ThemeProvider` as high as possible in your component tree:
+
+```tsx
+<html>
+  <body>
+    <ThemeProvider>  {/* ✓ Wrap entire app */}
+      <App />
+    </ThemeProvider>
+  </body>
+</html>
+```
+
+### Error Handling
+
+The `useTheme` hook throws an error if used outside the provider:
+
+```tsx
+export function useTheme() {
+  const context = useContext(ThemeContext);
+  if (context === undefined) {
+    throw new Error('useTheme must be used within a ThemeProvider');
+  }
+  return context;
+}
+```
+
+Always ensure components using `useTheme` are wrapped in `ThemeProvider`.
+
+### Testing Themes
+
+Test your components in all theme modes:
+
+1. Light mode
+2. Dark mode  
+3. System preference changes
+
+### Transition Smoothness
+
+Add smooth transitions to theme-dependent styles:
+
+```css
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+```
+
+## Common Patterns
+
+### Theme-Aware Components
+
+```tsx
+import { useTheme } from '@/contexts/ThemeContext';
+
+export default function Card({ children }) {
+  const { resolvedTheme } = useTheme();
+  
+  const bgColor = resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white';
+  
+  return (
+    <div className={`${bgColor} rounded-lg shadow p-4`}>
+      {children}
+    </div>
+  );
+}
+```
+
+### Settings Panel
+
+```tsx
+import { useTheme } from '@/contexts/ThemeContext';
+import ThemeToggle from '@/components/ThemeToggle';
+
+export default function SettingsPanel() {
+  const { theme } = useTheme();
+  
+  return (
+    <div className="settings">
+      <h2>Appearance</h2>
+      
+      <div className="setting-row">
+        <div>
+          <h3>Theme</h3>
+          <p>Current: {theme}</p>
+        </div>
+        <ThemeToggle />
+      </div>
+    </div>
+  );
+}
+```
+
+## Troubleshooting
+
+### Hydration Mismatch
+
+If you see hydration errors, ensure you're using the mounting check:
+
+```tsx
+const [mounted, setMounted] = useState(false);
+
+useEffect(() => {
+  setMounted(true);
+}, []);
+
+if (!mounted) {
+  return <Skeleton />; // Return placeholder during SSR
+}
+
+// Render theme-dependent content
+```
+
+### localStorage Undefined
+
+Handle SSR environments where localStorage isn't available:
+
+```tsx
+if (typeof window !== 'undefined') {
+  const savedTheme = localStorage.getItem('anidojo_theme');
+  // Use savedTheme
+}
+```
+
+### Theme Not Persisting
+
+Check that the ThemeProvider is:
+1. Wrapping your app correctly
+2. Not being unmounted and remounted
+3. localStorage is accessible in your environment
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Navigation Components" href="/api/components/navbar">
+    Add ThemeToggle to your navbar
+  </Card>
+  <Card title="Components Overview" href="/api/components/overview">
+    Explore other components
+  </Card>
+</CardGroup>

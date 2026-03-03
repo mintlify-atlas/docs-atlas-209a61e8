@@ -1,0 +1,344 @@
+---
+title: 'User Profiles'
+description: 'Customize your anime profile with stats, favorites, and activity tracking'
+icon: 'user'
+---
+
+## Overview
+
+Your AniDojo profile is your personal anime hub, showcasing your watching history, reviews, statistics, and favorites. Share it with the community or keep it private—you're in control.
+
+<Info>
+  Profile data syncs across devices using Supabase, so your stats and lists are always up-to-date.
+</Info>
+
+## Profile Features
+
+<CardGroup cols={2}>
+  <Card title="Watching Stats" icon="chart-bar">
+    Track total anime watched, episodes completed, and time spent watching.
+  </Card>
+  <Card title="Custom Avatar" icon="image">
+    Upload a profile picture and customize your cover banner.
+  </Card>
+  <Card title="Activity Feed" icon="rss">
+    Automatic timeline of your reviews, list updates, and watching progress.
+  </Card>
+  <Card title="Favorites" icon="heart">
+    Showcase your favorite anime, characters, and studios.
+  </Card>
+</CardGroup>
+
+## Profile Sections
+
+### Overview Tab
+
+Your profile landing page includes:
+
+<Steps>
+  <Step title="Profile Header">
+    - Display name and username
+    - Avatar and cover image
+    - Member since date
+    - Location (optional)
+    - Social links (Twitter, Discord, Website)
+    - Follow/Edit Profile buttons
+  </Step>
+  
+  <Step title="Quick Stats">
+    Four key metrics displayed prominently:
+    
+    ```
+    Total Anime Watched: 247
+    Episodes Watched: 3,847  
+    Days Watched: 64.1
+    Mean Score: 7.8/10
+    ```
+    
+    <Tip>
+      Days watched is calculated automatically: (episodes × 24 minutes) / 1,440 minutes per day
+    </Tip>
+  </Step>
+  
+  <Step title="Recent Activity">
+    Live feed showing your latest actions:
+    - Anime added to lists
+    - Episodes marked as watched
+    - Reviews posted
+    - Ratings given
+    - Status changes (started, completed)
+    
+    Each activity shows the anime cover, title, and timestamp.
+  </Step>
+  
+  <Step title="Currently Watching">
+    Horizontal scrolling carousel of anime you're actively watching, with:
+    - Cover art
+    - Title
+    - Progress bar (episodes watched / total episodes)
+    - Quick "Watch Next Episode" button
+  </Step>
+  
+  <Step title="Favorite Anime">
+    Grid display of your top-rated anime (9-10 scores):
+    - Up to 5 favorites shown
+    - Large cover art
+    - Hover effects
+    - Click to view details
+  </Step>
+  
+  <Step title="Quick Stats Widget">
+    Visual breakdown of your collection:
+    - Anime by status (watching, completed, on hold, dropped, plan to watch)
+    - Progress bars showing distribution
+    - Mean score calculation
+  </Step>
+</Steps>
+
+### Anime Lists Tab
+
+View and manage your entire anime collection:
+
+#### Status Filters
+
+Switch between list categories:
+- **All** - Complete collection
+- **Watching** - Currently watching
+- **Completed** - Finished watching  
+- **On Hold** - Temporarily paused
+- **Dropped** - Discontinued
+- **Plan to Watch** - Watchlist
+
+Each tab shows a count badge.
+
+#### View Modes
+
+**Grid View**: Card layout with cover art, title, status badge, rating, and episode progress.
+
+**Table View**: Detailed spreadsheet with columns:
+- Anime (thumbnail + title)
+- Status
+- Rating (visual stars)
+- Progress (X/Y episodes)
+- Last Updated date
+- Quick actions
+
+<Tip>
+  Table view is best for bulk editing and sorting large collections.
+</Tip>
+
+### Reviews Tab
+
+All your published reviews in one place:
+
+- Review title and full text
+- Rating (1-10 stars)
+- Date posted
+- Helpful votes count
+- Edit and delete options
+- Quick actions: Edit, Share, Delete
+
+<Note>
+  Draft reviews (unpublished) are managed separately in the My Reviews page.
+</Note>
+
+### Statistics Tab
+
+In-depth analytics about your watching habits:
+
+#### Overview Cards
+
+<CardGroup cols={4}>
+  <Card title="Total Anime" icon="film">
+    Count of unique anime in your lists
+  </Card>
+  <Card title="Episodes" icon="play">
+    Total episodes watched across all anime
+  </Card>
+  <Card title="Days Watched" icon="clock">
+    Time spent watching (auto-calculated)
+  </Card>
+  <Card title="Mean Score" icon="star">
+    Average rating across rated anime
+  </Card>
+</CardGroup>
+
+#### Charts & Visualizations
+
+**Score Distribution**: Bar chart showing how many anime you've rated at each score level (1-10).
+
+```typescript
+// Example data from ~/workspace/source/src/app/profile/page.tsx:850
+Score 1: 2 anime
+Score 2: 1 anime
+Score 3: 3 anime
+...
+Score 10: 15 anime
+```
+
+**Top Genres**: Pie chart displaying your most-watched genres:
+- Action: 45 anime
+- Drama: 32 anime  
+- Comedy: 28 anime
+- Romance: 22 anime
+- Adventure: 18 anime
+
+<Tip>
+  Genre data is pulled from your anime list entries and aggregated automatically.
+</Tip>
+
+### Favorites Tab
+
+Curate your personal favorites:
+
+- **Favorite Anime**: Showcase up to 10 anime
+- **Favorite Characters**: Coming soon
+- **Favorite Voice Actors**: Coming soon
+- **Favorite Studios**: Coming soon
+
+Click "Edit" to manage your favorites.
+
+## Customization
+
+### Edit Profile
+
+Click "Edit Profile" to update:
+
+1. **Display Name**: Your public display name
+2. **Username**: Unique identifier (used in profile URL)
+3. **Bio**: Short description about yourself and anime preferences
+4. **Location**: City/country (optional)
+5. **Avatar**: Profile picture (upload or URL)
+6. **Cover Image**: Banner background (recommended: 1200×300px)
+
+### Social Links
+
+Connect your profiles:
+- **Twitter**: @username
+- **Discord**: username#1234
+- **Website**: Personal site or blog URL
+
+<Info>
+  Social links appear as icons on your profile header and are clickable by visitors.
+</Info>
+
+### Privacy Settings
+
+Control who can see your profile:
+- **Public**: Anyone can view
+- **Private**: Only you can view
+- **Friends Only**: Coming soon
+
+## Activity Timeline
+
+Your profile automatically tracks:
+
+| Activity Type | Details |
+|--------------|----------|
+| **Watched** | "Watched episode X of [Anime]" |
+| **Added** | "Added [Anime] to [List Status]" |
+| **Reviewed** | "Wrote a review for [Anime]" |
+| **Rated** | "Rated [Anime] X/10" |
+| **Completed** | "Completed [Anime]" |
+
+Each activity includes:
+- Anime thumbnail
+- Action description
+- Timestamp (relative time)
+- Link to anime page
+
+## Profile Stats Calculation
+
+### Total Anime
+Count of unique anime across all lists (excluding duplicates).
+
+### Episodes Watched  
+Sum of `episodesWatched` from all anime entries.
+
+```typescript
+// From ~/workspace/source/src/app/profile/page.tsx:155
+stats: {
+  totalAnime: 247,
+  episodesWatched: 3847,
+  daysWatched: 64.1,
+  meanScore: 7.8
+}
+```
+
+### Days Watched
+Calculated as: `(episodes × 24 minutes) / 1,440 minutes per day`
+
+### Mean Score
+Average of all anime ratings (1-10 scale), excluding unrated anime.
+
+<Note>
+  Standard deviation is also calculated to show rating consistency.
+</Note>
+
+## Profile Badges
+
+Earn badges for achievements:
+- **Early Adopter**: Joined during beta
+- **Prolific Reviewer**: 50+ published reviews
+- **Completionist**: 100+ completed anime
+- **Binge Watcher**: 500+ episodes in one month
+- **Genre Explorer**: Watched anime from 20+ genres
+
+*More badges coming soon!*
+
+## Sharing Your Profile
+
+Share your profile with others:
+
+1. **Direct Link**: `anidojo.app/profile/[username]`
+2. **Copy Button**: One-click copy in profile header
+3. **Social Share**: Generate preview cards for Twitter/Discord
+
+<Tip>
+  Profile preview cards show your avatar, stats, and favorite anime automatically.
+</Tip>
+
+## Following & Followers
+
+*Coming Soon*
+
+- Follow other users to see their activity
+- Get followers to build your community
+- Activity feed of users you follow
+- Friend recommendations
+
+## Profile Themes
+
+*Coming Soon*
+
+Customize your profile appearance:
+- Color schemes
+- Layout options
+- Custom CSS (premium)
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Build Your Lists" icon="list" href="/features/lists-tracking">
+    Start tracking anime to populate your profile stats
+  </Card>
+  <Card title="Write Reviews" icon="pen" href="/features/reviews">
+    Share reviews to build your reputation
+  </Card>
+  <Card title="Discover Anime" icon="compass" href="/features/anime-search">
+    Find more anime to add to your profile
+  </Card>
+  <Card title="AI Recommendations" icon="sparkles" href="/features/ai-discovery">
+    Get personalized suggestions based on your profile
+  </Card>
+</CardGroup>
+
+## Privacy & Security
+
+<Warning>
+  Never share personal information (real name, address, phone) in your public profile. Keep your AniDojo profile anime-focused.
+</Warning>
+
+<Info>
+  Profile data is stored securely in Supabase with row-level security policies. Only you can edit your profile.
+</Info>

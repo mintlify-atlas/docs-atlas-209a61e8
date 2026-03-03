@@ -1,80 +1,386 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quick Start Guide
+description: Get started with AniDojo in minutes - from account creation to adding your first anime
 ---
 
-## Get started in three steps
+# Quick Start Guide
 
-Get your documentation site running locally and make your first customization.
-
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+Welcome to AniDojo! This guide will walk you through creating your account, setting up your profile, and adding your first anime to your list.
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  AniDojo is a web-based platform accessible at your deployment URL. No installation required for users!
 </Note>
+
+## Getting Started
+
+<Steps>
+  <Step title="Create Your Account">
+    ### Sign Up for AniDojo
+    
+    1. Navigate to the AniDojo homepage
+    2. Click **"Create Account"** button on the landing page
+    3. Enter your email address and create a secure password
+    4. Click **"Sign Up"** to create your account
+    
+    <Note>
+      Your profile will be automatically created with a username based on your email. You can customize it later!
+    </Note>
+    
+    **What Happens Next:**
+    - A profile is automatically created in the database (via the `handle_new_user()` trigger)
+    - Your user ID is stored in the `profiles` table
+    - You're redirected to the dashboard
+    
+    <CodeGroup>
+    ```typescript Database Trigger
+    -- Automatically creates profile on signup
+    CREATE TRIGGER on_auth_user_created
+      AFTER INSERT ON auth.users
+      FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+    ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Explore Your Dashboard">
+    ### Welcome to Your Dashboard
+    
+    After signing in, you'll see your personalized dashboard at `/dashboard` with:
+    
+    - **Recommended Anime**: AI-powered recommendations based on your taste
+    - **Trending This Week**: Popular anime in the community
+    - **Current Season**: Ongoing seasonal anime
+    - **Community Reviews**: Latest reviews from other users
+    
+    **Navigation Menu** (left sidebar):
+    - Home (Dashboard)
+    - Search
+    - AI Recommender
+    - My Lists
+    - My Reviews
+    - Upcoming
+    - Profile
+    - Settings
+    
+    <Note>
+      The dashboard uses the Jikan API to fetch real anime data from MyAnimeList. Initial load may take a moment.
+    </Note>
+  </Step>
+
+  <Step title="Search for Anime">
+    ### Find Your Favorite Anime
+    
+    **Option 1: Use Global Search**
+    - Click the search bar in the top navigation
+    - Type the anime title (e.g., "Attack on Titan")
+    - Select from the dropdown results
+    
+    **Option 2: Browse Top Anime**
+    - Navigate to **Search** in the sidebar
+    - Browse through top-rated anime from MyAnimeList
+    - Use pagination to explore more titles
+    
+    **Option 3: Discover Recommendations**
+    - Click **AI Recommender** in the sidebar
+    - Answer questions about your preferences
+    - Get personalized anime suggestions
+    
+    <CodeGroup>
+    ```typescript Search Example
+    // AniDojo searches the Jikan API
+    const results = await searchAnime('demon slayer', 1, 20);
+    
+    // Returns MyAnimeList data
+    {
+      data: [
+        {
+          mal_id: 38000,
+          title: "Demon Slayer: Kimetsu no Yaiba",
+          title_english: "Demon Slayer: Kimetsu no Yaiba",
+          images: { jpg: { large_image_url: "..." } },
+          score: 8.52,
+          genres: [{ name: "Action" }, { name: "Adventure" }]
+        }
+      ]
+    }
+    ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Add Anime to Your List">
+    ### Create Your First Entry
+    
+    Once you've found an anime:
+    
+    1. Click on the anime card to view details at `/anime/[id]`
+    2. Click **"Add to List"** button
+    3. Fill in the entry details:
+       - **Status**: Watching, Completed, Plan to Watch, On Hold, or Dropped
+       - **Episodes Watched**: Track your progress (e.g., 5/12)
+       - **Your Rating**: Rate from 1-10 (optional)
+       - **Notes**: Add personal notes (optional)
+       - **Tags**: Add custom tags (optional)
+       - **Mark as Favorite**: Star your favorites
+    
+    4. Click **"Save"** to add to your list
+    
+    **Your First Entry is Created!**
+    
+    <CodeGroup>
+    ```typescript anime_entries Table
+    // Database structure for your anime list
+    {
+      id: "uuid",
+      user_id: "your-user-id",
+      anime_id: 38000,
+      title: "Demon Slayer: Kimetsu no Yaiba",
+      status: "watching",
+      episodes_watched: 5,
+      score: 9,
+      favorite: true,
+      tags: ["action", "must-watch"],
+      notes: "Amazing animation quality!",
+      created_at: "2024-03-15T10:30:00Z"
+    }
+    ```
+    </CodeGroup>
+    
+    <Note>
+      Row Level Security ensures only you can see and modify your list entries (unless you make lists public).
+    </Note>
+  </Step>
+
+  <Step title="Manage Your Lists">
+    ### View and Organize Your Anime
+    
+    Navigate to **My Lists** in the sidebar to see all your anime:
+    
+    **List Views:**
+    - **Cards View**: Visual grid with cover art
+    - **Table View**: Detailed spreadsheet-style view
+    - **Compact View**: Dense list for quick scanning
+    
+    **Filter by Status:**
+    - All anime
+    - Watching (currently in progress)
+    - Completed (finished series)
+    - On Hold (paused)
+    - Dropped (discontinued)
+    - Plan to Watch (backlog)
+    
+    **Sort Options:**
+    - Title (A-Z or Z-A)
+    - Score (High to Low or Low to High)
+    - Date Added
+    - Last Updated
+    - Progress (% completed)
+    
+    **Quick Actions:**
+    - **Quick Edit**: Update status, episodes, or rating
+    - **Increment Episode**: Mark next episode as watched (for ongoing series)
+    - **View Details**: Go to anime details page
+    - **Delete Entry**: Remove from your list
+    
+    <Tip>
+      Use the Stats panel to see your total anime count, episodes watched, mean score, and favorite genres!
+    </Tip>
+  </Step>
+
+  <Step title="Write Your First Review">
+    ### Share Your Thoughts
+    
+    Ready to review an anime you've watched?
+    
+    1. Go to the anime details page (`/anime/[id]`)
+    2. Click **"Write Review"** button
+    3. Fill in the review form:
+       
+       **Multi-Dimensional Ratings:**
+       - Overall Rating (1-10)
+       - Story Rating (1-10)
+       - Animation Rating (1-10)
+       - Sound Rating (1-10)
+       - Character Rating (1-10)
+       - Enjoyment Rating (1-10)
+       
+       **Review Content:**
+       - Title: Catchy review headline
+       - Body: Detailed review text
+       - Pros: What you liked
+       - Cons: What could be improved
+       - Spoilers: Toggle if review contains spoilers
+       - Watch Status: Completed, Watching, Dropped, or Plan to Watch
+       - Recommendation: Highly Recommend → Strongly Not Recommend
+    
+    4. Choose **"Save as Draft"** or **"Publish"**
+    
+    <Warning>
+      You can only have ONE published review per anime. Draft multiple versions and publish your favorite!
+    </Warning>
+    
+    <CodeGroup>
+    ```typescript reviews Table
+    {
+      id: "uuid",
+      user_id: "your-user-id",
+      anime_id: 38000,
+      rating: 9,
+      story_rating: 9,
+      animation_rating: 10,
+      sound_rating: 9,
+      character_rating: 8,
+      enjoyment_rating: 9,
+      title: "A Visual Masterpiece",
+      body: "Demon Slayer sets a new standard...",
+      pros: "Stunning animation, great soundtrack",
+      cons: "Story can be predictable at times",
+      recommendation: "highly-recommend",
+      status: "published",
+      spoilers: false
+    }
+    ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Customize Your Profile">
+    ### Make It Your Own
+    
+    Navigate to **Profile** or **Settings** to customize:
+    
+    **Profile Settings:**
+    - **Username**: Change your display name
+    - **Avatar**: Upload a profile picture (stored in Supabase Storage `avatars` bucket)
+    - **Bio**: Add a personal bio
+    
+    **Privacy Settings:**
+    - Make lists public or private
+    - Control who can see your reviews
+    
+    <Note>
+      Avatar images are stored in Supabase Storage with Row Level Security. Only you can upload/update your avatar.
+    </Note>
+  </Step>
+</Steps>
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card
+    title="Discover More Anime"
+    icon="compass"
+    href="/features/ai-discovery"
+  >
+    Explore trending anime, current season releases, and use AI recommendations to find hidden gems.
+  </Card>
+  
+  <Card
+    title="Build Custom Lists"
+    icon="folder-plus"
+    href="/features/lists-tracking"
+  >
+    Create themed custom lists like "Best Action Anime" or "Must Watch Romance" and share with friends.
+  </Card>
+  
+  <Card
+    title="Engage with Community"
+    icon="users"
+    href="/features/reviews"
+  >
+    Read and vote on reviews, leave comments, and discover what other fans are watching.
+  </Card>
+  
+  <Card
+    title="Track Statistics"
+    icon="chart-bar"
+    href="/features/user-profiles"
+  >
+    Analyze your watching habits with detailed stats: genre distribution, score patterns, and viewing history.
+  </Card>
+</CardGroup>
+
+## Common User Flows
+
+<AccordionGroup>
+  <Accordion title="How do I track episode progress?">
+    1. Go to **My Lists**
+    2. Find the anime you're watching
+    3. Click the **+** button to increment episodes watched by 1
+    4. Or click **Edit** to manually set the episode count
+    
+    When episodes watched equals total episodes, the status automatically changes to "Completed"!
+  </Accordion>
+  
+  <Accordion title="Can I import my list from MyAnimeList?">
+    Yes! AniDojo supports list import:
+    
+    1. Export your list from MyAnimeList as XML or JSON
+    2. Go to **My Lists** → **Import**
+    3. Upload your file
+    4. AniDojo will match anime by MAL ID and create entries
+    
+    Note: The import feature uses the `upsertAnimeEntry` function to avoid duplicates.
+  </Accordion>
+  
+  <Accordion title="How do I make my lists public?">
+    1. Go to **Settings**
+    2. Under Privacy, toggle **"Make Lists Public"**
+    3. Your lists will now be visible to other users on your profile page
+    
+    Custom lists have individual public/private settings in the list creation modal.
+  </Accordion>
+  
+  <Accordion title="What's the difference between notes and reviews?">
+    **Notes** (in anime_entries table):
+    - Private to you
+    - Quick thoughts or reminders
+    - Character limit: 500
+    - Not visible to other users
+    
+    **Reviews** (in reviews table):
+    - Can be published publicly
+    - Detailed with multi-dimensional ratings
+    - Community can vote and comment
+    - One published review per anime
+  </Accordion>
+</AccordionGroup>
+
+## Tips for New Users
+
+<Tip>
+  **Start Small**: Add 5-10 anime you've already watched to get personalized recommendations working.
+</Tip>
+
+<Tip>
+  **Use Tags**: Add tags like "rewatch", "favorite", "binge-worthy" to organize your list effectively.
+</Tip>
+
+<Tip>
+  **Rate Everything**: The more you rate, the better your AI recommendations become!
+</Tip>
+
+<Tip>
+  **Join the Community**: Read reviews and leave comments to discover new perspectives on anime.
+</Tip>
+
+## Troubleshooting
+
+<Warning>
+  **Can't add anime to list?**
+  - Make sure you're signed in
+  - Check that you haven't already added this anime (search in My Lists)
+  - Try refreshing the page if the API is slow
+</Warning>
+
+<Warning>
+  **Search not working?**
+  - The Jikan API has rate limits (3 requests/second)
+  - Wait a few seconds and try again
+  - Check your internet connection
+</Warning>
+
+## Need More Help?
+
+For detailed feature documentation, see:
+- [Anime Lists Features](/features/lists-tracking)
+- [Reviews & Ratings](/features/reviews)
+- [Discovery & Recommendations](/features/ai-discovery)
+- [User Profiles](/features/user-profiles)

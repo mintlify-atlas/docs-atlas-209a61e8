@@ -1,0 +1,554 @@
+---
+title: 'getTopAnime()'
+description: 'Retrieve top-rated anime from MyAnimeList with optional filtering'
+---
+
+## Overview
+
+The `getTopAnime()` function retrieves the highest-rated anime from MyAnimeList, ranked by user scores. Supports pagination and optional filtering by anime type or status.
+
+## Function Signature
+
+```typescript
+getTopAnime(
+  page?: number,
+  limit?: number,
+  filter?: string
+): Promise<JikanSearchResponse>
+```
+
+## Parameters
+
+<ParamField path="page" type="number" default="1">
+  Page number for pagination.
+  
+  - **Minimum**: 1
+  - **Default**: 1
+  - Each page contains `limit` number of results
+</ParamField>
+
+<ParamField path="limit" type="number" default="20">
+  Number of results per page.
+  
+  - **Minimum**: 1
+  - **Maximum**: 25
+  - **Default**: 20
+</ParamField>
+
+<ParamField path="filter" type="string" optional>
+  Filter results by anime characteristics. Supported values:
+  
+  - `"airing"` - Currently airing anime only
+  - `"upcoming"` - Anime that haven't aired yet
+  - `"bypopularity"` - Sort by popularity instead of score
+  - `"favorite"` - Sort by number of favorites
+  
+  **Default**: No filter (sorted by score)
+</ParamField>
+
+## Return Value
+
+Returns a Promise that resolves to a `JikanSearchResponse` object.
+
+<ResponseField name="data" type="JikanAnime[]" required>
+  Array of top-rated anime objects, sorted by score (or other metric if filtered).
+  
+  Each anime includes:
+  - `mal_id` - MyAnimeList ID
+  - `title` - Anime title
+  - `score` - User rating (0-10)
+  - `rank` - Global ranking position
+  - `popularity` - Popularity ranking
+  - Complete metadata (genres, studios, episodes, etc.)
+  
+  See [JikanAnime interface](/api/anime/overview#jikananime-interface) for full structure.
+</ResponseField>
+
+<ResponseField name="pagination" type="object" required>
+  Pagination metadata
+  
+  <Expandable title="properties">
+    <ResponseField name="last_visible_page" type="number">
+      Total number of pages available
+    </ResponseField>
+    <ResponseField name="has_next_page" type="boolean">
+      Whether more results exist
+    </ResponseField>
+    <ResponseField name="current_page" type="number">
+      Current page number
+    </ResponseField>
+    <ResponseField name="items.total" type="number">
+      Total anime count across all pages
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Examples
+
+### Basic Usage
+
+<CodeGroup>
+```typescript Top 20 Anime
+import { getTopAnime } from '@/lib/animeApi';
+
+const topAnime = await getTopAnime();
+
+console.log(`Top ${topAnime.data.length} anime:`);
+topAnime.data.forEach((anime, index) => {
+  console.log(`${index + 1}. ${anime.title} - Score: ${anime.score}`);
+});
+
+// Example output:
+// 1. Fullmetal Alchemist: Brotherhood - Score: 9.10
+// 2. Steins;Gate - Score: 9.09
+// 3. Attack on Titan Season 3 Part 2 - Score: 9.08
+```
+
+```typescript With Pagination
+// Get top 10 anime per page
+const page1 = await getTopAnime(1, 10);
+console.log('Top 10:', page1.data.map(a => a.title));
+
+// Get next 10
+const page2 = await getTopAnime(2, 10);
+console.log('Rank 11-20:', page2.data.map(a => a.title));
+
+// Check if more pages exist
+if (page2.pagination.has_next_page) {
+  console.log('More anime available!');
+}
+```
+</CodeGroup>
+
+### Filtered Queries
+
+<CodeGroup>
+```typescript Currently Airing
+// Get top currently airing anime
+const airing = await getTopAnime(1, 20, 'airing');
+
+console.log('Top currently airing anime:');
+airing.data.forEach(anime => {
+  console.log(`${anime.title} - ${anime.score}/10`);
+  console.log(`  Status: ${anime.status}`);
+  console.log(`  Episodes: ${anime.episodes || 'Unknown'}`);
+});
+```
+
+```typescript By Popularity
+// Most popular anime (by member count)
+const popular = await getTopAnime(1, 25, 'bypopularity');
+
+console.log('Most popular anime:');
+popular.data.forEach(anime => {
+  console.log(`${anime.title}`);
+  console.log(`  Members: ${anime.members.toLocaleString()}`);
+  console.log(`  Popularity Rank: #${anime.popularity}`);
+});
+```
+
+```typescript Upcoming Anime
+// Upcoming anime sorted by anticipation
+const upcoming = await getTopAnime(1, 15, 'upcoming');
+
+console.log(`${upcoming.data.length} upcoming anime:`);
+upcoming.data.forEach(anime => {
+  console.log(`${anime.title} (${anime.year || 'TBA'})`);
+  console.log(`  Type: ${anime.type}`);
+  console.log(`  Synopsis: ${anime.synopsis.slice(0, 100)}...`);
+});
+```
+</CodeGroup>
+
+### Advanced Usage
+
+<CodeGroup>
+```typescript Load Multiple Pages
+import { getTopAnime, type JikanAnime } from '@/lib/animeApi';
+
+async function getTop100Anime(): Promise<JikanAnime[]> {
+  const allAnime: JikanAnime[] = [];
+  
+  // Load 4 pages of 25 each = 100 total
+  for (let page = 1; page <= 4; page++) {
+    const response = await getTopAnime(page, 25);
+    allAnime.push(...response.data);
+  }
+  
+  return allAnime;
+}
+
+const top100 = await getTop100Anime();
+console.log(`Loaded ${top100.length} top anime`);
+```
+
+```typescript Compare Metrics
+const byScore = await getTopAnime(1, 10);
+const byPopularity = await getTopAnime(1, 10, 'bypopularity');
+
+console.log('Highest rated:');
+byScore.data.slice(0, 5).forEach(a => 
+  console.log(`  ${a.title}: ${a.score}/10`)
+);
+
+console.log('\nMost popular:');
+byPopularity.data.slice(0, 5).forEach(a => 
+  console.log(`  ${a.title}: ${a.members.toLocaleString()} members`)
+);
+```
+
+```typescript Genre Analysis
+const topAnime = await getTopAnime(1, 50);
+
+// Count genre frequency in top anime
+const genreCounts = new Map<string, number>();
+
+topAnime.data.forEach(anime => {
+  anime.genres.forEach(genre => {
+    genreCounts.set(
+      genre.name, 
+      (genreCounts.get(genre.name) || 0) + 1
+    );
+  });
+});
+
+// Sort by frequency
+const sortedGenres = Array.from(genreCounts.entries())
+  .sort((a, b) => b[1] - a[1])
+  .slice(0, 10);
+
+console.log('Most common genres in top 50:');
+sortedGenres.forEach(([genre, count]) => {
+  console.log(`  ${genre}: ${count} anime`);
+});
+```
+</CodeGroup>
+
+## React Hook Usage
+
+Use the `useTopAnime` hook for React components:
+
+<CodeGroup>
+```tsx Basic Component
+import { useTopAnime } from '@/hooks/useAnime';
+
+function TopAnimeList() {
+  const { data, loading, error } = useTopAnime(1);
+  
+  if (loading) return <div>Loading top anime...</div>;
+  if (error) return <div>Error: {error}</div>;
+  
+  return (
+    <div>
+      <h1>Top Anime on MyAnimeList</h1>
+      <ol>
+        {data.map(anime => (
+          <li key={anime.id}>
+            <strong>{anime.title}</strong>
+            <span> - {anime.score}/10</span>
+            <p>{anime.synopsis}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+```
+
+```tsx With Pagination
+import { useState } from 'react';
+import { useTopAnime } from '@/hooks/useAnime';
+
+function TopAnimePaginated() {
+  const [page, setPage] = useState(1);
+  const { data, loading, hasNextPage } = useTopAnime(page);
+  
+  return (
+    <div className="top-anime">
+      <h1>Top Anime - Page {page}</h1>
+      
+      {loading ? (
+        <div>Loading...</div>
+      ) : (
+        <>
+          <div className="anime-grid">
+            {data.map(anime => (
+              <div key={anime.id} className="anime-card">
+                <img 
+                  src={anime.coverArt} 
+                  alt={anime.title}
+                />
+                <h3>{anime.title}</h3>
+                <div className="score">{anime.score}/10</div>
+              </div>
+            ))}
+          </div>
+          
+          <div className="pagination">
+            <button 
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1 || loading}
+            >
+              Previous
+            </button>
+            
+            <span>Page {page}</span>
+            
+            <button 
+              onClick={() => setPage(p => p + 1)}
+              disabled={!hasNextPage || loading}
+            >
+              Next
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+```
+</CodeGroup>
+
+## Filtering Details
+
+### Available Filters
+
+<Tabs>
+  <Tab title="airing">
+    Currently broadcasting anime only.
+    
+    ```typescript
+    const airing = await getTopAnime(1, 20, 'airing');
+    
+    // Returns anime where:
+    // - status === 'Currently Airing'
+    // - airing === true
+    ```
+    
+    Use case: Show what's hot right now
+  </Tab>
+  
+  <Tab title="upcoming">
+    Anime that haven't started airing yet.
+    
+    ```typescript
+    const upcoming = await getTopAnime(1, 20, 'upcoming');
+    
+    // Returns anime where:
+    // - status === 'Not yet aired'
+    // - Sorted by hype/anticipation
+    ```
+    
+    Use case: Preview future releases
+  </Tab>
+  
+  <Tab title="bypopularity">
+    Sort by member count instead of score.
+    
+    ```typescript
+    const popular = await getTopAnime(1, 20, 'bypopularity');
+    
+    // Sorted by anime.members (descending)
+    // Shows what most people are watching
+    ```
+    
+    Use case: Find mainstream hits
+  </Tab>
+  
+  <Tab title="favorite">
+    Sort by number of users who favorited the anime.
+    
+    ```typescript
+    const favorites = await getTopAnime(1, 20, 'favorite');
+    
+    // Sorted by anime.favorites (descending)
+    // Shows most beloved anime
+    ```
+    
+    Use case: Find cult classics and fan favorites
+  </Tab>
+</Tabs>
+
+## Performance & Caching
+
+### Automatic Caching
+
+Responses are cached for 5 minutes:
+
+```typescript
+// First call - fetches from API (~500ms)
+const first = await getTopAnime(1, 20);
+
+// Second call within 5 minutes - returns cached data (~1ms)
+const second = await getTopAnime(1, 20);
+
+// Different parameters - new API call
+const filtered = await getTopAnime(1, 20, 'airing');
+```
+
+### Rate Limiting
+
+Automatic rate limiting ensures API compliance:
+
+- 3 requests per second maximum
+- Queued execution when limit reached
+- Exponential backoff on 429 errors
+
+```typescript
+// All requests are automatically queued
+const [top, airing, upcoming] = await Promise.all([
+  getTopAnime(1, 10),
+  getTopAnime(1, 10, 'airing'),
+  getTopAnime(1, 10, 'upcoming')
+]);
+
+// Executes sequentially with 350ms delays
+```
+
+## Common Patterns
+
+### Leaderboard Display
+
+```typescript
+const topAnime = await getTopAnime(1, 10);
+
+interface LeaderboardEntry {
+  rank: number;
+  title: string;
+  score: number;
+  imageUrl: string;
+}
+
+const leaderboard: LeaderboardEntry[] = topAnime.data.map((anime, index) => ({
+  rank: index + 1,
+  title: anime.title,
+  score: anime.score,
+  imageUrl: anime.images.jpg.large_image_url
+}));
+
+// Use in UI
+leaderboard.forEach(entry => {
+  console.log(`#${entry.rank}: ${entry.title} (${entry.score}/10)`);
+});
+```
+
+### Recommendation Engine
+
+```typescript
+async function getSimilarToTop(genres: string[], limit = 5) {
+  const topAnime = await getTopAnime(1, 100);
+  
+  // Find top anime matching user's preferred genres
+  const recommendations = topAnime.data.filter(anime => 
+    anime.genres.some(g => genres.includes(g.name))
+  ).slice(0, limit);
+  
+  return recommendations;
+}
+
+// Get top Action/Fantasy anime
+const recs = await getSimilarToTop(['Action', 'Fantasy'], 5);
+```
+
+### Trending Analysis
+
+```typescript
+interface TrendingStats {
+  topAiring: JikanAnime[];
+  avgScore: number;
+  mostCommonGenre: string;
+}
+
+async function getTrendingStats(): Promise<TrendingStats> {
+  const airing = await getTopAnime(1, 25, 'airing');
+  
+  const avgScore = airing.data.reduce((sum, a) => sum + a.score, 0) / airing.data.length;
+  
+  const genreCounts = new Map<string, number>();
+  airing.data.forEach(anime => {
+    anime.genres.forEach(g => {
+      genreCounts.set(g.name, (genreCounts.get(g.name) || 0) + 1);
+    });
+  });
+  
+  const mostCommonGenre = Array.from(genreCounts.entries())
+    .sort((a, b) => b[1] - a[1])[0][0];
+  
+  return {
+    topAiring: airing.data,
+    avgScore: Math.round(avgScore * 100) / 100,
+    mostCommonGenre
+  };
+}
+
+const stats = await getTrendingStats();
+console.log(`Trending genre: ${stats.mostCommonGenre}`);
+console.log(`Average score: ${stats.avgScore}/10`);
+```
+
+## Error Handling
+
+<ResponseField name="API request failed: 404" type="Error">
+  Invalid page number (beyond available pages)
+  
+  ```typescript
+  try {
+    await getTopAnime(999999);
+  } catch (error) {
+    console.error('Page not found');
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="API request failed: 429" type="Error">
+  Rate limit exceeded (after retries)
+  
+  ```typescript
+  try {
+    await getTopAnime();
+  } catch (error) {
+    console.error('Too many requests, try again later');
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="Network errors" type="Error">
+  Connection issues or timeouts
+  
+  ```typescript
+  try {
+    await getTopAnime();
+  } catch (error) {
+    if (error instanceof TypeError) {
+      console.error('Network error - check connection');
+    }
+  }
+  ```
+</ResponseField>
+
+## API Endpoint
+
+Calls the Jikan API endpoint:
+
+```
+GET https://api.jikan.moe/v4/top/anime?page={page}&limit={limit}&filter={filter}
+```
+
+Documentation: [Jikan Top Anime API](https://docs.api.jikan.moe/#tag/top/operation/getTopAnime)
+
+## See Also
+
+<CardGroup cols={2}>
+  <Card title="searchAnime()" icon="magnifying-glass" href="/api/anime/search">
+    Search anime by query string
+  </Card>
+  <Card title="Seasonal Anime" icon="calendar" href="/api/anime/seasonal">
+    Get anime by season and year
+  </Card>
+  <Card title="Components" icon="component" href="/api/components/overview">
+    React components for anime display
+  </Card>
+  <Card title="API Overview" icon="book" href="/api/anime/overview">
+    Complete API reference and types
+  </Card>
+</CardGroup>

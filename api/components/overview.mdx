@@ -1,0 +1,113 @@
+---
+title: Components Overview
+description: React components for building AniDojo features
+---
+
+AniDojo provides a collection of React components for search functionality, navigation, and theming. All components are built with TypeScript and designed for Next.js applications.
+
+## Component Categories
+
+<CardGroup cols={2}>
+  <Card title="Search Components" icon="magnifying-glass" href="/api/components/search">
+    GlobalSearch and AnimeSearch components for discovering anime
+  </Card>
+  <Card title="Navigation Components" icon="bars" href="/api/components/navbar">
+    Navbar and AuthNavbar components for site navigation
+  </Card>
+  <Card title="Theme Components" icon="moon" href="/api/components/theme">
+    ThemeToggle and theme system for dark/light mode support
+  </Card>
+</CardGroup>
+
+## Architecture
+
+All components follow these patterns:
+
+### Client-Side Components
+
+All interactive components use the `'use client'` directive for Next.js client-side rendering:
+
+```tsx
+'use client';
+
+import { useState } from 'react';
+// Component implementation
+```
+
+### TypeScript Interfaces
+
+Components define clear TypeScript interfaces for props and data structures:
+
+```tsx
+interface ComponentProps {
+  className?: string;
+  // Additional props
+}
+```
+
+### Accessibility
+
+Components include proper ARIA labels and keyboard navigation:
+
+- `aria-label` attributes for icon buttons
+- Keyboard shortcuts (e.g., `/` for search focus)
+- Focus management for modals and dropdowns
+
+## Common Patterns
+
+### Styling
+
+Components use Tailwind CSS with custom theme colors:
+
+```tsx
+<div className="bg-ink text-cream hover:text-crimson-bright transition-colors">
+  Content
+</div>
+```
+
+### State Management
+
+Local state with React hooks for component-specific data:
+
+```tsx
+const [isOpen, setIsOpen] = useState(false);
+const [data, setData] = useState([]);
+```
+
+### Effects and Cleanup
+
+Proper effect cleanup to prevent memory leaks:
+
+```tsx
+useEffect(() => {
+  const handler = () => { /* ... */ };
+  window.addEventListener('event', handler);
+  return () => window.removeEventListener('event', handler);
+}, []);
+```
+
+## Import Paths
+
+Components are located in the `@/components` directory:
+
+```tsx
+import GlobalSearch from '@/components/GlobalSearch';
+import AnimeSearch from '@/components/AnimeSearch';
+import Navbar from '@/components/Navbar';
+import AuthNavbar from '@/components/AuthNavbar';
+import ThemeToggle from '@/components/ThemeToggle';
+```
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Search" href="/api/components/search">
+    Learn about search components
+  </Card>
+  <Card title="Navigation" href="/api/components/navbar">
+    Explore navigation components
+  </Card>
+  <Card title="Theming" href="/api/components/theme">
+    Implement theme switching
+  </Card>
+</CardGroup>

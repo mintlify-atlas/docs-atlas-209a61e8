@@ -1,0 +1,229 @@
+---
+title: 'Deploy to Vercel'
+description: 'Step-by-step guide to deploying AniDojo on Vercel'
+---
+
+## Overview
+
+AniDojo is optimized for deployment on Vercel, the platform built by the creators of Next.js. This guide walks you through deploying your AniDojo application to production.
+
+<Note>
+Before deploying, ensure you have a Supabase project set up and your database migrations applied. See [Running Database Migrations](/deployment/migrations) for details.
+</Note>
+
+## Prerequisites
+
+- A GitHub, GitLab, or Bitbucket account with your AniDojo repository
+- A Vercel account (sign up at [vercel.com](https://vercel.com))
+- A configured Supabase project with migrations applied
+- All required environment variables ready
+
+## Deployment Steps
+
+<Steps>
+  <Step title="Connect Your Repository">
+    1. Go to [vercel.com](https://vercel.com) and sign in
+    2. Click **"Add New Project"**
+    3. Select **"Import Git Repository"**
+    4. Choose your AniDojo repository from GitHub/GitLab/Bitbucket
+    5. Click **"Import"**
+  </Step>
+
+  <Step title="Configure Project Settings">
+    Vercel will automatically detect your Next.js project. Configure the following:
+
+    **Framework Preset:** Next.js (auto-detected)
+
+    **Root Directory:** `./` (or your project root)
+
+    **Build Command:** `npm run build` (default)
+
+    **Output Directory:** `.next` (default)
+
+    **Install Command:** `npm install` (default)
+  </Step>
+
+  <Step title="Add Environment Variables">
+    In the **Environment Variables** section, add all required variables:
+
+    ```bash
+    NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+    ```
+
+    <Warning>
+    Make sure to add these variables for **all environments** (Production, Preview, and Development) or select the appropriate environments based on your needs.
+    </Warning>
+
+    See [Environment Variables](/deployment/environment-variables) for a complete list of required variables.
+  </Step>
+
+  <Step title="Deploy">
+    1. Review your configuration
+    2. Click **"Deploy"**
+    3. Wait for the build to complete (typically 2-5 minutes)
+    4. Once deployed, you'll receive a production URL like `your-app.vercel.app`
+  </Step>
+
+  <Step title="Verify Deployment">
+    After deployment completes:
+
+    1. Visit your production URL
+    2. Test user signup/signin functionality
+    3. Verify database connectivity by creating a test anime entry
+    4. Check that images load correctly
+    5. Test key features like reviews and list management
+  </Step>
+</Steps>
+
+## Custom Domain Setup
+
+To use your own domain:
+
+<Steps>
+  <Step title="Add Domain in Vercel">
+    1. Go to your project dashboard in Vercel
+    2. Navigate to **Settings → Domains**
+    3. Click **"Add Domain"**
+    4. Enter your domain name (e.g., `anidojo.com`)
+  </Step>
+
+  <Step title="Configure DNS">
+    Vercel will provide DNS configuration instructions. Add the following records to your domain provider:
+
+    **Option A: CNAME Record (recommended for subdomains)**
+    ```
+    Type: CNAME
+    Name: www (or your subdomain)
+    Value: cname.vercel-dns.com
+    ```
+
+    **Option B: A Record (for apex/root domains)**
+    ```
+    Type: A
+    Name: @
+    Value: 76.76.21.21
+    ```
+  </Step>
+
+  <Step title="Wait for Propagation">
+    DNS changes can take up to 48 hours to propagate, but typically complete within a few hours. Vercel will automatically provision an SSL certificate once DNS is configured.
+  </Step>
+</Steps>
+
+## Automatic Deployments
+
+Vercel automatically deploys your application when you push changes:
+
+- **Production deployments:** Triggered by pushes to your main/master branch
+- **Preview deployments:** Created for every pull request and branch push
+- **Instant rollbacks:** Revert to any previous deployment instantly
+
+<Note>
+Every git push creates a unique deployment URL, making it easy to preview changes before merging to production.
+</Note>
+
+## Build Configuration
+
+### Turbopack Support
+
+AniDojo uses Turbopack for faster builds. This is configured in `package.json`:
+
+```json package.json
+{
+  "scripts": {
+    "build": "next build --turbopack"
+  }
+}
+```
+
+### Image Optimization
+
+Vercel automatically handles Next.js Image Optimization. The following remote patterns are configured in `next.config.ts`:
+
+```typescript next.config.ts
+images: {
+  remotePatterns: [
+    {
+      protocol: 'https',
+      hostname: 'cdn.myanimelist.net',
+    },
+    {
+      protocol: 'https',
+      hostname: '*.supabase.co',
+    },
+  ],
+}
+```
+
+## Troubleshooting
+
+### Build Failures
+
+**"Module not found" errors:**
+- Clear Vercel build cache: Settings → General → Clear Build Cache
+- Ensure all dependencies are in `package.json`
+- Check for case-sensitive import paths
+
+**"Environment variable undefined" errors:**
+- Verify environment variables are set in Vercel dashboard
+- Redeploy after adding new environment variables
+- Check variable names match exactly (including `NEXT_PUBLIC_` prefix)
+
+### Runtime Errors
+
+**"Failed to fetch" or API errors:**
+- Verify Supabase URL and keys are correct
+- Check Supabase project is active and not paused
+- Verify CORS settings in Supabase dashboard
+
+**Database connection issues:**
+- Ensure migrations have been run on your Supabase project
+- Check RLS policies are properly configured
+- Verify your Supabase anon key has correct permissions
+
+**Image loading failures:**
+- Confirm image domains are whitelisted in `next.config.ts`
+- Check Supabase storage buckets are set to public
+- Verify storage policies allow public read access
+
+### Performance Issues
+
+**Slow page loads:**
+- Enable Edge Runtime for API routes where applicable
+- Use Incremental Static Regeneration (ISR) for anime listing pages
+- Optimize images using Next.js Image component
+
+**Cold starts:**
+- Consider upgrading to Vercel Pro for reduced cold start times
+- Implement proper caching strategies
+- Use Edge Functions for latency-sensitive operations
+
+## Monitoring and Analytics
+
+Vercel provides built-in monitoring:
+
+1. **Speed Insights:** Track Core Web Vitals and performance metrics
+2. **Web Analytics:** Privacy-friendly analytics without cookies
+3. **Log Drains:** Stream logs to external services for advanced monitoring
+4. **Error Tracking:** Integrate with Sentry or similar services
+
+Access these features in your project's **Analytics** tab.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Environment Variables" icon="key" href="/deployment/environment-variables">
+    Learn about all required environment variables
+  </Card>
+  <Card title="Database Migrations" icon="database" href="/deployment/migrations">
+    Set up and run database migrations
+  </Card>
+</CardGroup>
+
+## Additional Resources
+
+- [Vercel Documentation](https://vercel.com/docs)
+- [Next.js Deployment](https://nextjs.org/docs/deployment)
+- [Vercel CLI Reference](https://vercel.com/docs/cli)
+- [Custom Domains Guide](https://vercel.com/docs/concepts/projects/domains)

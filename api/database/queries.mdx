@@ -1,0 +1,705 @@
+---
+title: 'Query Functions'
+description: 'TypeScript query functions for AniDojo database operations'
+---
+
+## Overview
+
+The query functions provide a type-safe interface for database operations. All functions are located in `src/lib/supabase/queries.ts` and use the Supabase client for data access.
+
+```typescript
+import { createClient } from '@/lib/supabase/client';
+import type { AnimeEntry, Review, CustomList, Comment, ReviewVote } from '@/types/database';
+
+const supabase = createClient();
+```
+
+---
+
+## Anime Entries
+
+Functions for managing user's anime list entries.
+
+### getAnimeEntries()
+
+Retrieves all anime entries for a specific user, ordered by creation date (newest first).
+
+<ParamField path="userId" type="string" required>
+  The user's UUID from Supabase Auth
+</ParamField>
+
+**Returns:** `Promise<AnimeEntry[]>`
+
+**Throws:** Supabase error if query fails
+
+```typescript
+const entries = await getAnimeEntries(user.id);
+// Returns array of anime entries
+```
+
+---
+
+### getAnimeEntry()
+
+Retrieves a specific anime entry for a user.
+
+<ParamField path="userId" type="string" required>
+  The user's UUID
+</ParamField>
+
+<ParamField path="animeId" type="number" required>
+  The anime ID from external API (e.g., MyAnimeList)
+</ParamField>
+
+**Returns:** `Promise<AnimeEntry | null>`
+
+**Throws:** Supabase error if query fails (except PGRST116 - not found)
+
+```typescript
+const entry = await getAnimeEntry(user.id, 1535);
+if (entry) {
+  console.log(`Status: ${entry.status}`);
+}
+```
+
+---
+
+### upsertAnimeEntry()
+
+Creates or updates an anime entry. Uses `(user_id, anime_id)` as conflict resolution key.
+
+<ParamField path="entry" type="Omit<AnimeEntry, 'id' | 'created_at' | 'updated_at'>" required>
+  Anime entry data without auto-generated fields
+</ParamField>
+
+**Required fields in entry:**
+- `user_id` - User UUID
+- `anime_id` - Anime ID from external API
+- `title` - Anime title
+- `status` - One of: 'watching', 'completed', 'on-hold', 'dropped', 'plan-to-watch'
+- `episodes_watched` - Number of episodes watched (default: 0)
+
+**Returns:** `Promise<AnimeEntry>`
+
+**Throws:** Supabase error if operation fails
+
+```typescript
+const newEntry = await upsertAnimeEntry({
+  user_id: user.id,
+  anime_id: 1535,
+  title: 'Death Note',
+  title_english: 'Death Note',
+  status: 'watching',
+  episodes_watched: 5,
+  score: 9,
+  tags: ['psychological', 'thriller'],
+  favorite: true,
+  rewatch_count: 0,
+  genres: ['Mystery', 'Thriller'],
+  episodes: 37,
+  type: 'TV'
+});
+```
+
+<Tip>
+The function automatically sets `updated_at` to the current timestamp.
+</Tip>
+
+---
+
+### deleteAnimeEntry()
+
+Deletes an anime entry for a specific user.
+
+<ParamField path="userId" type="string" required>
+  The user's UUID
+</ParamField>
+
+<ParamField path="animeId" type="number" required>
+  The anime ID to delete
+</ParamField>
+
+**Returns:** `Promise<void>`
+
+**Throws:** Supabase error if deletion fails
+
+```typescript
+await deleteAnimeEntry(user.id, 1535);
+```
+
+---
+
+## Reviews
+
+Functions for managing anime reviews.
+
+### getReviews()
+
+Retrieves reviews with flexible filtering options, ordered by update date (newest first).
+
+<ParamField path="animeId" type="number">
+  Filter by specific anime ID
+</ParamField>
+
+<ParamField path="userId" type="string">
+  Filter by specific user ID
+</ParamField>
+
+<ParamField path="status" type="'draft' | 'published'">
+  Filter by publication status
+</ParamField>
+
+<ParamField path="limit" type="number">
+  Maximum number of reviews to return
+</ParamField>
+
+**Returns:** `Promise<Review[]>`
+
+**Throws:** Supabase error if query fails
+
+```typescript
+// Get all published reviews for an anime
+const reviews = await getReviews(1535, undefined, 'published');
+
+// Get user's draft reviews
+const drafts = await getReviews(undefined, user.id, 'draft');
+
+// Get recent published reviews (limited)
+const recent = await getReviews(undefined, undefined, 'published', 10);
+```
+
+<Info>
+The function includes console logging for performance monitoring.
+</Info>
+
+---
+
+### getReview()
+
+Retrieves a single review by ID.
+
+<ParamField path="reviewId" type="string" required>
+  The review UUID
+</ParamField>
+
+**Returns:** `Promise<Review>`
+
+**Throws:** Supabase error if query fails or review not found
+
+```typescript
+const review = await getReview('550e8400-e29b-41d4-a716-446655440000');
+```
+
+---
+
+### getUserReview()
+
+Retrieves a user's review for a specific anime.
+
+<ParamField path="userId" type="string" required>
+  The user's UUID
+</ParamField>
+
+<ParamField path="animeId" type="number" required>
+  The anime ID
+</ParamField>
+
+**Returns:** `Promise<Review | null>`
+
+**Throws:** Supabase error if query fails (except PGRST116 - not found)
+
+```typescript
+const userReview = await getUserReview(user.id, 1535);
+if (userReview) {
+  console.log(`Rating: ${userReview.rating}/10`);
+}
+```
+
+---
+
+### upsertReview()
+
+Creates or updates a review with complex logic for handling drafts and published reviews.
+
+<ParamField path="review" type="Omit<Review, 'created_at' | 'updated_at' | 'helpful_votes'> & { id?: string }" required>
+  Review data (id optional for creation)
+</ParamField>
+
+**Required fields:**
+- `user_id` - User UUID
+- `anime_id` - Anime ID
+- `rating` - Overall rating (1-10)
+- `title` - Review title
+- `body` - Review content
+- `spoilers` - Whether contains spoilers
+- `watch_status` - One of: 'completed', 'watching', 'dropped', 'plan-to-watch'
+- `status` - 'draft' or 'published'
+- `tags` - Array of tags
+
+**Returns:** `Promise<Review>`
+
+**Throws:** Supabase error if operation fails
+
+<Expandable title="Update Logic">
+  The function implements sophisticated logic:
+  
+  1. **With ID provided:** Updates the specific review by ID
+     - If publishing, deletes any other published review for same user/anime
+  
+  2. **Without ID:** Searches for existing review
+     - If found: Updates the existing review
+     - If not found: Creates new review
+  
+  3. **Unique constraint:** Only one published review per user per anime
+     - Database enforces with partial unique index
+     - Function proactively deletes conflicting published reviews
+</Expandable>
+
+```typescript
+// Create new draft review
+const draft = await upsertReview({
+  user_id: user.id,
+  anime_id: 1535,
+  rating: 9,
+  story_rating: 10,
+  animation_rating: 8,
+  sound_rating: 9,
+  character_rating: 9,
+  enjoyment_rating: 10,
+  title: 'A Psychological Masterpiece',
+  body: 'Death Note is an exceptional thriller...',
+  spoilers: false,
+  watch_status: 'completed',
+  episodes_watched: 37,
+  tags: ['psychological', 'must-watch'],
+  pros: 'Brilliant mind games and character development',
+  cons: 'Second half slightly weaker',
+  recommendation: 'highly-recommend',
+  status: 'draft'
+});
+
+// Publish existing review
+const published = await upsertReview({
+  ...draft,
+  id: draft.id,
+  status: 'published'
+});
+```
+
+<Warning>
+Publishing a review when another published review exists for the same user/anime will delete the old one.
+</Warning>
+
+---
+
+### deleteReview()
+
+Permanently deletes a review and all associated votes/comments (CASCADE).
+
+<ParamField path="reviewId" type="string" required>
+  The review UUID to delete
+</ParamField>
+
+**Returns:** `Promise<void>`
+
+**Throws:** Supabase error if deletion fails
+
+```typescript
+await deleteReview(review.id);
+```
+
+---
+
+## Review Votes
+
+Functions for helpful/not helpful voting on reviews.
+
+### voteReview()
+
+Casts or updates a vote on a review. Uses upsert to allow vote changes.
+
+<ParamField path="reviewId" type="string" required>
+  The review UUID
+</ParamField>
+
+<ParamField path="userId" type="string" required>
+  The voting user's UUID
+</ParamField>
+
+<ParamField path="helpful" type="boolean" required>
+  True for helpful, false for not helpful
+</ParamField>
+
+**Returns:** `Promise<ReviewVote>`
+
+**Throws:** Supabase error if operation fails
+
+```typescript
+// Vote review as helpful
+await voteReview(review.id, user.id, true);
+
+// Change vote to not helpful
+await voteReview(review.id, user.id, false);
+```
+
+<Info>
+The review's `helpful_votes` count is automatically updated by a database trigger.
+</Info>
+
+---
+
+### getUserReviewVote()
+
+Retrieves a user's vote on a specific review.
+
+<ParamField path="reviewId" type="string" required>
+  The review UUID
+</ParamField>
+
+<ParamField path="userId" type="string" required>
+  The user's UUID
+</ParamField>
+
+**Returns:** `Promise<ReviewVote | null>`
+
+**Throws:** Supabase error if query fails (except PGRST116 - not found)
+
+```typescript
+const vote = await getUserReviewVote(review.id, user.id);
+if (vote) {
+  console.log(vote.helpful ? 'Voted helpful' : 'Voted not helpful');
+}
+```
+
+---
+
+## Comments
+
+Functions for managing review comments with threading support.
+
+### getComments()
+
+Retrieves all non-deleted comments for a review, ordered chronologically.
+
+<ParamField path="reviewId" type="string" required>
+  The review UUID
+</ParamField>
+
+**Returns:** `Promise<Comment[]>`
+
+**Throws:** Supabase error if query fails
+
+```typescript
+const comments = await getComments(review.id);
+// Filter top-level comments
+const topLevel = comments.filter(c => !c.parent_id);
+// Filter replies to a comment
+const replies = comments.filter(c => c.parent_id === comment.id);
+```
+
+<Tip>
+Comments with `deleted_at !== null` are automatically filtered out.
+</Tip>
+
+---
+
+### createComment()
+
+Creates a new comment or reply on a review.
+
+<ParamField path="comment" type="Omit<Comment, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>" required>
+  Comment data without auto-generated fields
+</ParamField>
+
+**Required fields:**
+- `review_id` - Review UUID
+- `user_id` - Commenter's UUID
+- `content` - Comment text
+- `parent_id` - Parent comment UUID (null for top-level comments)
+
+**Returns:** `Promise<Comment>`
+
+**Throws:** Supabase error if creation fails
+
+```typescript
+// Create top-level comment
+const comment = await createComment({
+  review_id: review.id,
+  user_id: user.id,
+  parent_id: null,
+  content: 'Great review! I totally agree about the second half.'
+});
+
+// Create reply
+const reply = await createComment({
+  review_id: review.id,
+  user_id: user.id,
+  parent_id: comment.id,
+  content: 'Thanks for reading!'
+});
+```
+
+---
+
+### updateComment()
+
+Updates the content of an existing comment.
+
+<ParamField path="commentId" type="string" required>
+  The comment UUID
+</ParamField>
+
+<ParamField path="content" type="string" required>
+  New comment text
+</ParamField>
+
+**Returns:** `Promise<Comment>`
+
+**Throws:** Supabase error if update fails
+
+```typescript
+const updated = await updateComment(
+  comment.id,
+  'Great review! I totally agree about the character development.'
+);
+```
+
+<Info>
+The `updated_at` timestamp is automatically set by a database trigger.
+</Info>
+
+---
+
+### deleteComment()
+
+Soft deletes a comment by setting `deleted_at` timestamp.
+
+<ParamField path="commentId" type="string" required>
+  The comment UUID to delete
+</ParamField>
+
+**Returns:** `Promise<void>`
+
+**Throws:** Supabase error if deletion fails
+
+```typescript
+await deleteComment(comment.id);
+// Comment remains in database but won't appear in queries
+```
+
+<Warning>
+This is a soft delete. The comment data remains in the database but won't be returned by `getComments()`.
+</Warning>
+
+---
+
+## Custom Lists
+
+Functions for managing user-created anime lists.
+
+### getCustomLists()
+
+Retrieves all custom lists for a user with entry counts.
+
+<ParamField path="userId" type="string" required>
+  The user's UUID
+</ParamField>
+
+**Returns:** `Promise<(CustomList & { custom_list_entries: { anime_id: number }[] })[]>`
+
+**Throws:** Supabase error if query fails
+
+```typescript
+const lists = await getCustomLists(user.id);
+lists.forEach(list => {
+  console.log(`${list.name}: ${list.custom_list_entries.length} anime`);
+});
+```
+
+<Info>
+The query joins with `custom_list_entries` to include anime IDs in each list.
+</Info>
+
+---
+
+### createCustomList()
+
+Creates a new custom list.
+
+<ParamField path="list" type="Omit<CustomList, 'id' | 'created_at' | 'updated_at'>" required>
+  List data without auto-generated fields
+</ParamField>
+
+**Required fields:**
+- `user_id` - User UUID
+- `name` - List name
+- `is_public` - Public visibility (default: false)
+
+**Returns:** `Promise<CustomList>`
+
+**Throws:** Supabase error if creation fails
+
+```typescript
+const list = await createCustomList({
+  user_id: user.id,
+  name: 'Best Psychological Anime',
+  description: 'Mind-bending anime that make you think',
+  is_public: true
+});
+```
+
+---
+
+### updateCustomList()
+
+Updates properties of a custom list.
+
+<ParamField path="listId" type="string" required>
+  The list UUID
+</ParamField>
+
+<ParamField path="updates" type="Partial<CustomList>" required>
+  Fields to update
+</ParamField>
+
+**Returns:** `Promise<CustomList>`
+
+**Throws:** Supabase error if update fails
+
+```typescript
+const updated = await updateCustomList(list.id, {
+  name: 'Top Psychological Thrillers',
+  is_public: true
+});
+```
+
+---
+
+### deleteCustomList()
+
+Deletes a custom list and all its entries (CASCADE).
+
+<ParamField path="listId" type="string" required>
+  The list UUID to delete
+</ParamField>
+
+**Returns:** `Promise<void>`
+
+**Throws:** Supabase error if deletion fails
+
+```typescript
+await deleteCustomList(list.id);
+```
+
+---
+
+### addAnimeToList()
+
+Adds an anime to a custom list.
+
+<ParamField path="listId" type="string" required>
+  The list UUID
+</ParamField>
+
+<ParamField path="animeId" type="number" required>
+  The anime ID to add
+</ParamField>
+
+**Returns:** `Promise<CustomListEntry>`
+
+**Throws:** Supabase error if operation fails (e.g., duplicate entry)
+
+```typescript
+await addAnimeToList(list.id, 1535); // Add Death Note
+```
+
+<Warning>
+Adding the same anime twice to a list will fail due to unique constraint.
+</Warning>
+
+---
+
+### removeAnimeFromList()
+
+Removes an anime from a custom list.
+
+<ParamField path="listId" type="string" required>
+  The list UUID
+</ParamField>
+
+<ParamField path="animeId" type="number" required>
+  The anime ID to remove
+</ParamField>
+
+**Returns:** `Promise<void>`
+
+**Throws:** Supabase error if deletion fails
+
+```typescript
+await removeAnimeFromList(list.id, 1535);
+```
+
+---
+
+## Error Handling
+
+All query functions throw Supabase errors on failure. Wrap calls in try-catch blocks:
+
+```typescript
+try {
+  const entries = await getAnimeEntries(user.id);
+  // Process entries
+} catch (error) {
+  console.error('Failed to fetch anime entries:', error);
+  // Show user-friendly error message
+}
+```
+
+### Common Error Codes
+
+- `PGRST116` - Row not found (handled by `getAnimeEntry`, `getUserReview`, etc.)
+- `23505` - Unique constraint violation
+- `23503` - Foreign key constraint violation
+- `42501` - Insufficient privileges (RLS policy denied access)
+
+---
+
+## Usage with React
+
+```typescript
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { getAnimeEntries, upsertAnimeEntry } from '@/lib/supabase/queries';
+import type { AnimeEntry } from '@/types/database';
+
+export default function AnimeList() {
+  const { user } = useAuth();
+  const [entries, setEntries] = useState<AnimeEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      loadEntries();
+    }
+  }, [user]);
+
+  async function loadEntries() {
+    try {
+      const data = await getAnimeEntries(user.id);
+      setEntries(data);
+    } catch (error) {
+      console.error('Error loading entries:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div>
+      {loading ? 'Loading...' : entries.map(entry => (
+        <div key={entry.id}>{entry.title}</div>
+      ))}
+    </div>
+  );
+}
+```

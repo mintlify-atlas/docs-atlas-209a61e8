@@ -1,0 +1,355 @@
+---
+title: 'Environment Variables'
+description: 'Complete guide to configuring environment variables for AniDojo'
+---
+
+## Overview
+
+AniDojo requires specific environment variables to connect to Supabase and function properly in production. This guide covers all required and optional environment variables.
+
+<Warning>
+Never commit environment variables to your repository. Always use `.env.local` for local development and configure them in your deployment platform (Vercel) for production.
+</Warning>
+
+## Required Environment Variables
+
+These variables are essential for AniDojo to function:
+
+### Supabase Configuration
+
+<ParamField path="NEXT_PUBLIC_SUPABASE_URL" type="string" required>
+  Your Supabase project URL
+
+  **Example:** `https://abcdefghijklmnop.supabase.co`
+
+  **Where to find:**
+  1. Go to your [Supabase Dashboard](https://supabase.com/dashboard)
+  2. Select your project
+  3. Navigate to **Settings → API**
+  4. Copy the **Project URL**
+</ParamField>
+
+<ParamField path="NEXT_PUBLIC_SUPABASE_ANON_KEY" type="string" required>
+  Your Supabase anonymous/public API key
+
+  **Example:** `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
+
+  **Where to find:**
+  1. Go to your [Supabase Dashboard](https://supabase.com/dashboard)
+  2. Select your project
+  3. Navigate to **Settings → API**
+  4. Copy the **anon public** key
+
+  <Note>
+  This key is safe to use in client-side code. It's protected by Row Level Security (RLS) policies in your database.
+  </Note>
+</ParamField>
+
+## Local Development Setup
+
+<Steps>
+  <Step title="Create Environment File">
+    Create a `.env.local` file in your project root:
+
+    ```bash
+    touch .env.local
+    ```
+
+    <Warning>
+    The `.env.local` file should already be in your `.gitignore`. Never commit it to version control.
+    </Warning>
+  </Step>
+
+  <Step title="Add Variables">
+    Add your Supabase credentials to `.env.local`:
+
+    ```bash .env.local
+    NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+    ```
+  </Step>
+
+  <Step title="Restart Development Server">
+    Environment variables are loaded at startup, so restart your development server:
+
+    ```bash
+    npm run dev
+    ```
+  </Step>
+</Steps>
+
+## Production Setup (Vercel)
+
+For production deployments on Vercel:
+
+<Steps>
+  <Step title="Navigate to Project Settings">
+    1. Go to your project dashboard on [Vercel](https://vercel.com)
+    2. Click **Settings**
+    3. Select **Environment Variables** from the sidebar
+  </Step>
+
+  <Step title="Add Each Variable">
+    For each required environment variable:
+
+    1. Enter the **Key** (e.g., `NEXT_PUBLIC_SUPABASE_URL`)
+    2. Enter the **Value** (your actual credential)
+    3. Select environments:
+       - ✅ **Production** (required)
+       - ✅ **Preview** (recommended)
+       - ⬜ **Development** (optional)
+    4. Click **Save**
+
+    <Note>
+    Adding variables to Preview environments ensures pull request deployments work correctly.
+    </Note>
+  </Step>
+
+  <Step title="Redeploy">
+    After adding or updating environment variables, trigger a new deployment:
+
+    1. Go to the **Deployments** tab
+    2. Click the **⋯** menu on the latest deployment
+    3. Select **Redeploy**
+
+    Or simply push a new commit to your repository.
+  </Step>
+</Steps>
+
+## Environment Variable Types
+
+### Public vs Private Variables
+
+Next.js has two types of environment variables:
+
+**Public Variables** (prefixed with `NEXT_PUBLIC_`)
+- Exposed to the browser
+- Can be used in client-side code
+- Bundled into your JavaScript
+- Example: `NEXT_PUBLIC_SUPABASE_URL`
+
+```typescript
+// ✅ Works in client components
+'use client';
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+```
+
+**Private Variables** (no prefix)
+- Only available on the server
+- Cannot be accessed in client-side code
+- Used for sensitive secrets
+- Example: `DATABASE_PASSWORD` (if needed)
+
+```typescript
+// ✅ Only works in server components/API routes
+const secret = process.env.DATABASE_PASSWORD;
+```
+
+<Warning>
+AniDojo uses the Supabase anonymous key (`NEXT_PUBLIC_SUPABASE_ANON_KEY`) which is safe to expose publicly. Security is handled by Row Level Security (RLS) policies in your Supabase database.
+</Warning>
+
+## Verifying Configuration
+
+### Local Development
+
+Verify your environment variables are loaded correctly:
+
+```typescript
+// Add this temporarily to any server component
+export default function TestPage() {
+  console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+  console.log('Key present:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  return <div>Check console</div>;
+}
+```
+
+### Production
+
+Test your production environment:
+
+1. Deploy your application
+2. Open browser DevTools → Console
+3. Run: `console.log(process.env.NEXT_PUBLIC_SUPABASE_URL)`
+4. Verify the correct URL is displayed
+
+<Note>
+If you see `undefined`, your environment variables are not configured correctly in Vercel.
+</Note>
+
+## Using Environment Variables
+
+### In Client Components
+
+```typescript src/lib/supabase/client.ts
+import { createBrowserClient } from '@supabase/ssr';
+
+export function createClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
+```
+
+### In Server Components
+
+```typescript src/lib/supabase/server.ts
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+
+export async function createClient() {
+  const cookieStore = await cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+}
+```
+
+### In Middleware
+
+```typescript src/lib/supabase/middleware.ts
+import { createServerClient } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server';
+
+export async function updateSession(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
+          supabaseResponse = NextResponse.next({ request });
+        },
+      },
+    }
+  );
+
+  await supabase.auth.getUser();
+  return supabaseResponse;
+}
+```
+
+## Troubleshooting
+
+### "Cannot read property of undefined"
+
+**Cause:** Environment variable not set or misspelled
+
+**Solution:**
+1. Check variable names match exactly (including `NEXT_PUBLIC_` prefix)
+2. Verify variables are set in `.env.local` (local) or Vercel dashboard (production)
+3. Restart development server after changing `.env.local`
+4. Redeploy after updating Vercel environment variables
+
+### "Invalid API key" from Supabase
+
+**Cause:** Incorrect or expired Supabase credentials
+
+**Solution:**
+1. Verify you copied the correct keys from Supabase dashboard
+2. Check for extra spaces or newlines in the values
+3. Ensure you're using the **anon public** key, not the service role key
+4. Verify your Supabase project is active (not paused)
+
+### Variables Not Updating
+
+**Local Development:**
+- Restart your development server (`npm run dev`)
+- Clear Next.js cache: `rm -rf .next`
+
+**Production (Vercel):**
+- Trigger a new deployment after updating variables
+- Clear build cache in Vercel settings if issues persist
+
+### Security Concerns
+
+**"Is it safe to expose the anon key?"**
+
+Yes! The Supabase anonymous key is designed to be public. Security is enforced through:
+
+1. **Row Level Security (RLS):** Database policies control data access
+2. **JWT verification:** Supabase verifies user authentication tokens
+3. **Rate limiting:** Built-in protection against abuse
+
+<Warning>
+Never expose your Supabase **service_role** key in client-side code. This key bypasses RLS and should only be used in secure server environments.
+</Warning>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use different Supabase projects for development and production">
+    - Create separate Supabase projects for dev and prod
+    - Use different environment variables for each
+    - Prevents test data from polluting production
+    - Example: `dev.env.local` and production variables in Vercel
+  </Accordion>
+
+  <Accordion title="Rotate keys periodically">
+    - Rotate your Supabase anon key every few months
+    - Update environment variables in all environments
+    - Redeploy to apply changes
+    - Document key rotation dates
+  </Accordion>
+
+  <Accordion title="Document required variables">
+    - Create an `.env.example` file with dummy values
+    - Commit it to version control
+    - Helps new developers set up their environment
+    - Example:
+    ```bash .env.example
+    NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+    ```
+  </Accordion>
+
+  <Accordion title="Use type-safe environment variables">
+    Create a helper to validate environment variables:
+    
+    ```typescript lib/env.ts
+    export const env = {
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    };
+
+    // Validate at build time
+    if (!env.supabaseUrl || !env.supabaseAnonKey) {
+      throw new Error('Missing required environment variables');
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Deploy to Vercel" icon="rocket" href="/deployment/vercel">
+    Deploy your application to production
+  </Card>
+  <Card title="Database Migrations" icon="database" href="/deployment/migrations">
+    Set up your production database
+  </Card>
+</CardGroup>

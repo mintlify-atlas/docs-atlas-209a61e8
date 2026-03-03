@@ -1,0 +1,399 @@
+---
+title: 'Code Style & Conventions'
+description: 'Follow these coding standards to maintain consistency across the AniDojo codebase'
+---
+
+## Overview
+
+AniDojo follows modern TypeScript and React best practices. This guide outlines the code style and conventions used throughout the project.
+
+## TypeScript Configuration
+
+AniDojo is built with TypeScript in strict mode for maximum type safety.
+
+### Compiler Options
+
+Key TypeScript settings from `tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "strict": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "moduleResolution": "bundler",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}
+```
+
+<Note>
+  The `@/*` path alias is configured to map to `./src/*`, allowing clean imports throughout the codebase.
+</Note>
+
+### Type Safety Guidelines
+
+**Always use explicit types:**
+
+```typescript
+// Good
+interface AnimeCardProps {
+  title: string;
+  imageUrl: string;
+  rating: number;
+}
+
+const AnimeCard = ({ title, imageUrl, rating }: AnimeCardProps) => {
+  // component code
+};
+
+// Avoid
+const AnimeCard = (props: any) => {
+  // component code
+};
+```
+
+**Prefer interfaces over types for object shapes:**
+
+```typescript
+// Good
+interface Anime {
+  id: string;
+  title: string;
+  episodes: number;
+}
+
+// Use type for unions and primitives
+type Status = 'watching' | 'completed' | 'planned';
+```
+
+**Use type inference where appropriate:**
+
+```typescript
+// Good - type is inferred
+const animeList = ['Naruto', 'One Piece', 'Bleach'];
+
+// Unnecessary explicit typing
+const animeList: string[] = ['Naruto', 'One Piece', 'Bleach'];
+```
+
+## ESLint Configuration
+
+AniDojo uses ESLint with Next.js recommended rules for code quality.
+
+### Running the Linter
+
+<CodeGroup>
+```bash npm
+npm run lint
+```
+
+```bash yarn
+yarn lint
+```
+
+```bash pnpm
+pnpm lint
+```
+
+```bash bun
+bun lint
+```
+</CodeGroup>
+
+### ESLint Rules
+
+The project extends these configurations:
+
+- `next/core-web-vitals` - Next.js performance and best practices
+- `next/typescript` - TypeScript-specific Next.js rules
+
+<Tip>
+  Enable ESLint integration in your IDE (VS Code, WebStorm, etc.) to catch issues while coding.
+</Tip>
+
+### Ignored Patterns
+
+These directories are excluded from linting:
+
+- `node_modules/**`
+- `.next/**`
+- `out/**`
+- `build/**`
+- `next-env.d.ts`
+
+## React & Next.js Conventions
+
+### Component Structure
+
+**Use functional components with hooks:**
+
+```typescript
+import { useState } from 'react';
+
+interface SearchBarProps {
+  onSearch: (query: string) => void;
+}
+
+export default function SearchBar({ onSearch }: SearchBarProps) {
+  const [query, setQuery] = useState('');
+  
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSearch(query);
+  };
+  
+  return (
+    <form onSubmit={handleSubmit}>
+      {/* component JSX */}
+    </form>
+  );
+}
+```
+
+**File naming conventions:**
+
+- Components: `PascalCase.tsx` (e.g., `AnimeCard.tsx`)
+- Utilities: `camelCase.ts` (e.g., `mockData.ts`)
+- Hooks: `use*.ts` (e.g., `useAnime.ts`)
+- Types: `camelCase.ts` or `types.ts`
+
+### Import Organization
+
+Organize imports in this order:
+
+```typescript
+// 1. External dependencies
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+
+// 2. Internal components
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+
+// 3. Utilities and helpers
+import { cn } from '@/lib/utils';
+import { mockAnimeData } from '@/lib/mockData';
+
+// 4. Types
+import type { Anime } from '@/types';
+
+// 5. Styles (if any)
+import styles from './Component.module.css';
+```
+
+<Tip>
+  Use the `@/*` path alias for all internal imports to avoid relative path confusion.
+</Tip>
+
+### Server vs Client Components
+
+**Default to Server Components (Next.js 15):**
+
+```typescript
+// Server Component (default)
+export default function AnimePage() {
+  // Fetch data directly
+  return <div>...</div>;
+}
+```
+
+**Use Client Components when needed:**
+
+```typescript
+'use client'
+
+import { useState } from 'react';
+
+// Client Component for interactivity
+export default function SearchBar() {
+  const [query, setQuery] = useState('');
+  return <input value={query} onChange={(e) => setQuery(e.target.value)} />;
+}
+```
+
+Add `'use client'` directive only when you need:
+- React hooks (useState, useEffect, etc.)
+- Browser APIs (localStorage, window, etc.)
+- Event handlers and interactivity
+
+## Styling Guidelines
+
+### Tailwind CSS
+
+AniDojo uses Tailwind CSS v4 for styling.
+
+**Use utility classes:**
+
+```tsx
+<div className="flex items-center gap-4 p-6 bg-gray-900 rounded-lg">
+  <h2 className="text-xl font-bold text-white">Title</h2>
+</div>
+```
+
+**Use the `cn()` utility for conditional classes:**
+
+```typescript
+import { cn } from '@/lib/utils';
+
+<button 
+  className={cn(
+    'px-4 py-2 rounded-lg',
+    isActive ? 'bg-blue-600' : 'bg-gray-600',
+    disabled && 'opacity-50 cursor-not-allowed'
+  )}
+>
+  Click me
+</button>
+```
+
+### Class Variance Authority
+
+For complex component variants, use `class-variance-authority`:
+
+```typescript
+import { cva } from 'class-variance-authority';
+
+const buttonVariants = cva(
+  'rounded-lg font-semibold transition-colors',
+  {
+    variants: {
+      variant: {
+        primary: 'bg-blue-600 text-white hover:bg-blue-700',
+        secondary: 'bg-gray-600 text-white hover:bg-gray-700',
+      },
+      size: {
+        sm: 'px-3 py-1.5 text-sm',
+        md: 'px-4 py-2 text-base',
+        lg: 'px-6 py-3 text-lg',
+      },
+    },
+    defaultVariants: {
+      variant: 'primary',
+      size: 'md',
+    },
+  }
+);
+```
+
+## State Management
+
+### Zustand
+
+AniDojo uses Zustand for global state management:
+
+```typescript
+import { create } from 'zustand';
+
+interface AnimeStore {
+  favorites: string[];
+  addFavorite: (id: string) => void;
+  removeFavorite: (id: string) => void;
+}
+
+export const useAnimeStore = create<AnimeStore>((set) => ({
+  favorites: [],
+  addFavorite: (id) => 
+    set((state) => ({ favorites: [...state.favorites, id] })),
+  removeFavorite: (id) => 
+    set((state) => ({ favorites: state.favorites.filter((f) => f !== id) })),
+}));
+```
+
+### Local State
+
+Use React hooks for component-local state:
+
+```typescript
+const [isOpen, setIsOpen] = useState(false);
+const [searchQuery, setSearchQuery] = useState('');
+```
+
+## Comments and Documentation
+
+**Write self-documenting code:**
+
+```typescript
+// Good - clear variable names
+const filteredAnimeList = animeList.filter(anime => anime.rating > 8);
+
+// Avoid - unclear intent
+const result = list.filter(x => x.r > 8);
+```
+
+**Add comments for complex logic:**
+
+```typescript
+// Calculate weighted rating based on user votes and critic score
+const weightedRating = (userVotes * 0.7) + (criticScore * 0.3);
+```
+
+**Use JSDoc for public APIs:**
+
+```typescript
+/**
+ * Fetches anime details by ID
+ * @param id - The anime ID
+ * @returns Promise resolving to anime data
+ */
+export async function getAnimeById(id: string): Promise<Anime> {
+  // implementation
+}
+```
+
+## Best Practices
+
+<Steps>
+  <Step title="Keep Components Small">
+    Break down large components into smaller, reusable pieces.
+  </Step>
+  
+  <Step title="Use TypeScript Strict Mode">
+    Never use `any` type unless absolutely necessary. Prefer `unknown` for truly dynamic types.
+  </Step>
+  
+  <Step title="Handle Loading and Error States">
+    Always provide feedback for async operations.
+  </Step>
+  
+  <Step title="Optimize Performance">
+    Use React.memo, useMemo, and useCallback appropriately for expensive operations.
+  </Step>
+  
+  <Step title="Follow Accessibility Guidelines">
+    Use semantic HTML, ARIA labels, and keyboard navigation.
+  </Step>
+</Steps>
+
+<Note>
+  When in doubt, look at existing code in the project for examples and consistency.
+</Note>
+
+## Editor Setup
+
+### VS Code
+
+Recommended extensions:
+
+- ESLint
+- TypeScript and JavaScript Language Features
+- Tailwind CSS IntelliSense
+- Prettier (optional)
+
+### Settings
+
+Add to `.vscode/settings.json`:
+
+```json
+{
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+  "typescript.tsdk": "node_modules/typescript/lib"
+}
+```
+
+Following these conventions helps maintain a clean, consistent, and maintainable codebase!

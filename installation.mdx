@@ -1,0 +1,639 @@
+---
+title: Developer Installation
+description: Set up AniDojo development environment for local development and contributions
+---
+
+# Developer Installation Guide
+
+This guide covers setting up AniDojo locally for development, testing, and contributions.
+
+<Warning>
+  This guide is for **developers** who want to contribute to AniDojo. End users should use the deployed web application.
+</Warning>
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+<CardGroup cols={2}>
+  <Card title="Node.js 18+" icon="node-js">
+    Required for running Next.js and development tools.
+    
+    Download from [nodejs.org](https://nodejs.org/)
+  </Card>
+  
+  <Card title="Package Manager" icon="box">
+    Choose one:
+    - npm (comes with Node.js)
+    - yarn
+    - pnpm
+    - bun
+  </Card>
+  
+  <Card title="Git" icon="git-alt">
+    For cloning the repository and version control.
+  </Card>
+  
+  <Card title="Supabase Account" icon="database">
+    Free account at [supabase.com](https://supabase.com) for backend services.
+  </Card>
+</CardGroup>
+
+## Installation Steps
+
+<Steps>
+  <Step title="Clone the Repository">
+    Clone the AniDojo repository to your local machine:
+    
+    <CodeGroup>
+    ```bash HTTPS
+    git clone https://github.com/yourusername/anidojo.git
+    cd anidojo
+    ```
+    
+    ```bash SSH
+    git clone git@github.com:yourusername/anidojo.git
+    cd anidojo
+    ```
+    </CodeGroup>
+    
+    <Note>
+      Replace `yourusername` with the actual repository owner or organization name.
+    </Note>
+  </Step>
+
+  <Step title="Install Dependencies">
+    Install all required npm packages:
+    
+    <CodeGroup>
+    ```bash npm
+    npm install
+    ```
+    
+    ```bash yarn
+    yarn install
+    ```
+    
+    ```bash pnpm
+    pnpm install
+    ```
+    
+    ```bash bun
+    bun install
+    ```
+    </CodeGroup>
+    
+    **Key Dependencies Installed:**
+    
+    | Package | Version | Purpose |
+    |---------|---------|----------|
+    | next | ^16.0.0 | React framework with App Router |
+    | react | 19.1.0 | UI library with Server Components |
+    | @supabase/supabase-js | ^2.78.0 | Supabase client |
+    | @supabase/ssr | ^0.7.0 | Server-side rendering support |
+    | axios | ^1.12.2 | HTTP client for Jikan API |
+    | tailwindcss | ^4 | Utility-first CSS framework |
+    | typescript | ^5 | Type safety |
+    | lucide-react | ^0.544.0 | Icon library |
+    | zustand | ^5.0.8 | State management |
+    | react-hook-form | ^7.63.0 | Form handling |
+    | zod | ^4.1.11 | Schema validation |
+    | recharts | ^3.2.1 | Statistics charts |
+    
+    <Note>
+      Installation may take 2-5 minutes depending on your internet connection and package manager.
+    </Note>
+  </Step>
+
+  <Step title="Set Up Supabase Project">
+    ### Create a Supabase Project
+    
+    1. Go to [supabase.com](https://supabase.com) and sign in
+    2. Click **"New Project"**
+    3. Enter project details:
+       - **Name**: anidojo-dev
+       - **Database Password**: Generate a strong password (save it!)
+       - **Region**: Choose closest to you
+    4. Click **"Create New Project"**
+    5. Wait 2-3 minutes for project initialization
+    
+    ### Get API Credentials
+    
+    1. In your Supabase dashboard, go to **Settings** → **API**
+    2. Copy the following values:
+       - **Project URL**: `https://[project-ref].supabase.co`
+       - **anon/public key**: Long JWT token starting with `eyJ...`
+    
+    <Warning>
+      Never commit the `anon` key to public repositories, even though it's designed for client-side use. The `service_role` key should NEVER be used in client code.
+    </Warning>
+  </Step>
+
+  <Step title="Configure Environment Variables">
+    Create a `.env.local` file in the project root:
+    
+    <CodeGroup>
+    ```bash Terminal
+    touch .env.local
+    ```
+    
+    ```env .env.local
+    # Supabase Configuration
+    NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+    
+    # Optional: Jikan API (no key needed, but you can add custom configs)
+    # NEXT_PUBLIC_JIKAN_API_URL=https://api.jikan.moe/v4
+    ```
+    </CodeGroup>
+    
+    **Environment Variable Reference:**
+    
+    | Variable | Required | Description |
+    |----------|----------|-------------|
+    | `NEXT_PUBLIC_SUPABASE_URL` | Yes | Your Supabase project URL |
+    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anonymous/public key |
+    
+    <Note>
+      Variables prefixed with `NEXT_PUBLIC_` are exposed to the browser. Never put secrets here!
+    </Note>
+    
+    <Tip>
+      You can verify your environment variables are loaded by checking `process.env.NEXT_PUBLIC_SUPABASE_URL` in any component.
+    </Tip>
+  </Step>
+
+  <Step title="Set Up Database Schema">
+    AniDojo uses PostgreSQL through Supabase. You need to run the database migrations.
+    
+    ### Option A: Using Supabase Dashboard (Recommended for Beginners)
+    
+    1. Open your Supabase project dashboard
+    2. Navigate to **SQL Editor** (left sidebar)
+    3. Click **"New Query"**
+    4. Open the migration file: `supabase/migrations/001_initial_schema.sql`
+    5. Copy the entire SQL script
+    6. Paste into the SQL Editor
+    7. Click **"Run"** (or press Cmd/Ctrl + Enter)
+    8. Wait for success message
+    9. Verify tables in **Table Editor**
+    
+    **Tables Created:**
+    - `profiles` - User profiles
+    - `anime_entries` - User anime lists
+    - `reviews` - Anime reviews
+    - `review_votes` - Helpful/unhelpful votes
+    - `comments` - Review comments
+    - `comment_votes` - Comment upvotes/downvotes
+    - `custom_lists` - Custom anime lists
+    - `custom_list_entries` - List entries
+    
+    ### Option B: Using Supabase CLI (Recommended for Production)
+    
+    <CodeGroup>
+    ```bash Install Supabase CLI
+    npm install -g supabase
+    ```
+    
+    ```bash Link Project
+    # Get your project ref from Supabase dashboard URL
+    supabase link --project-ref your-project-ref
+    ```
+    
+    ```bash Run Migrations
+    supabase db push
+    ```
+    </CodeGroup>
+    
+    <Note>
+      The migration includes database triggers for automatic profile creation and updated_at timestamps.
+    </Note>
+  </Step>
+
+  <Step title="Set Up Storage Buckets">
+    Create storage buckets for file uploads:
+    
+    ### Create Buckets in Supabase Dashboard
+    
+    1. Go to **Storage** in Supabase dashboard
+    2. Click **"New Bucket"**
+    
+    **Bucket 1: avatars**
+    - Name: `avatars`
+    - Public: ✅ Yes
+    - File size limit: 5 MB
+    - Allowed MIME types: `image/jpeg, image/png, image/webp, image/gif`
+    
+    **Bucket 2: anime-images** (Optional)
+    - Name: `anime-images`
+    - Public: ✅ Yes
+    - File size limit: 10 MB
+    - Allowed MIME types: `image/jpeg, image/png, image/webp`
+    
+    **Bucket 3: review-images** (Optional)
+    - Name: `review-images`
+    - Public: ✅ Yes
+    - File size limit: 10 MB
+    - Allowed MIME types: `image/jpeg, image/png, image/webp`
+    
+    ### Set Up Storage Policies
+    
+    Run these SQL commands in the SQL Editor:
+    
+    <CodeGroup>
+    ```sql Avatars Policies
+    -- Allow public read access
+    CREATE POLICY "Avatar images are publicly accessible"
+    ON storage.objects FOR SELECT
+    USING (bucket_id = 'avatars');
+    
+    -- Allow users to upload their own avatars
+    CREATE POLICY "Users can upload their own avatar"
+    ON storage.objects FOR INSERT
+    WITH CHECK (
+      bucket_id = 'avatars' AND
+      auth.uid()::text = (storage.foldername(name))[1]
+    );
+    
+    -- Allow users to update their own avatars
+    CREATE POLICY "Users can update their own avatar"
+    ON storage.objects FOR UPDATE
+    USING (
+      bucket_id = 'avatars' AND
+      auth.uid()::text = (storage.foldername(name))[1]
+    );
+    ```
+    </CodeGroup>
+    
+    <Note>
+      Row Level Security ensures users can only manage their own avatar files.
+    </Note>
+  </Step>
+
+  <Step title="Start Development Server">
+    Run the development server with Turbopack:
+    
+    <CodeGroup>
+    ```bash npm
+    npm run dev
+    ```
+    
+    ```bash yarn
+    yarn dev
+    ```
+    
+    ```bash pnpm
+    pnpm dev
+    ```
+    
+    ```bash bun
+    bun dev
+    ```
+    </CodeGroup>
+    
+    The server will start on `http://localhost:3000`
+    
+    **Expected Output:**
+    ```
+    ▲ Next.js 16.0.0
+    - Local:        http://localhost:3000
+    - Turbopack:    enabled
+    
+    ✓ Ready in 2.3s
+    ```
+    
+    <Note>
+      Turbopack provides faster hot module replacement (HMR) compared to Webpack.
+    </Note>
+  </Step>
+
+  <Step title="Verify Installation">
+    Test that everything is working:
+    
+    1. **Open Browser**: Navigate to `http://localhost:3000`
+    2. **Landing Page**: You should see the auth landing page with anime data
+    3. **Sign Up**: Create a test account
+       - Email: `test@example.com`
+       - Password: `testpassword123`
+    4. **Check Supabase**:
+       - Go to Supabase dashboard → **Authentication** → **Users**
+       - Verify your test user appears
+       - Go to **Table Editor** → **profiles**
+       - Verify profile was auto-created
+    5. **Test Features**:
+       - Browse anime on the dashboard
+       - Add an anime to your list
+       - Write a review
+       - Check that data appears in Supabase tables
+    
+    <Tip>
+      Use your browser's DevTools (F12) to check for console errors or network issues.
+    </Tip>
+  </Step>
+</Steps>
+
+## Project Structure
+
+Understand the codebase organization:
+
+```
+anidojo/
+├── src/
+│   ├── app/                    # Next.js App Router pages
+│   │   ├── anime/[id]/        # Dynamic anime details
+│   │   │   ├── page.tsx       # Anime info page
+│   │   │   └── review/        # Write review page
+│   │   ├── auth/              # Landing/auth page
+│   │   ├── browse/            # Browse top anime
+│   │   ├── dashboard/         # User dashboard
+│   │   ├── discover/          # AI recommendations
+│   │   ├── my-lists/          # User anime lists
+│   │   ├── my-reviews/        # User reviews
+│   │   ├── profile/           # User profile
+│   │   ├── search/            # Search page
+│   │   ├── settings/          # User settings
+│   │   ├── signin/            # Sign in page
+│   │   ├── signup/            # Sign up page
+│   │   ├── upcoming/          # Upcoming anime
+│   │   ├── layout.tsx         # Root layout
+│   │   └── page.tsx           # Home (redirects to auth)
+│   ├── components/            # React components
+│   │   ├── AddAnimeModal.tsx  # Add anime to list modal
+│   │   ├── AuthNavbar.tsx     # Auth page navbar
+│   │   ├── GlobalSearch.tsx   # Search component
+│   │   ├── Navbar.tsx         # Main navbar
+│   │   └── Providers.tsx      # Context providers
+│   ├── contexts/              # React contexts
+│   │   └── AuthContext.tsx    # Authentication context
+│   ├── hooks/                 # Custom React hooks
+│   │   └── useAnime.ts        # Anime data hooks
+│   ├── lib/                   # Utility libraries
+│   │   ├── animeApi.ts        # Jikan API client
+│   │   ├── mockData.ts        # Type definitions
+│   │   ├── utils.ts           # Helper functions
+│   │   └── supabase/          # Supabase utilities
+│   │       ├── client.ts      # Browser client
+│   │       ├── server.ts      # Server client
+│   │       └── queries.ts     # Database queries
+│   └── types/                 # TypeScript types
+│       └── database.ts        # Database types
+├── supabase/
+│   └── migrations/
+│       └── 001_initial_schema.sql  # Database schema
+├── public/                    # Static assets
+│   └── images/                # Images and icons
+├── package.json               # Dependencies
+├── tsconfig.json              # TypeScript config
+├── tailwind.config.js         # Tailwind config
+└── next.config.mjs            # Next.js config
+```
+
+## Development Workflow
+
+### Running Build
+
+<CodeGroup>
+```bash Build for Production
+npm run build
+```
+
+```bash Start Production Server
+npm run start
+```
+
+```bash Run Linter
+npm run lint
+```
+</CodeGroup>
+
+### Environment-Specific Commands
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dev server with Turbopack (hot reload) |
+| `npm run build` | Build production bundle |
+| `npm run start` | Start production server (run build first) |
+| `npm run lint` | Run ESLint for code quality |
+
+### Working with Supabase
+
+<CodeGroup>
+```bash Check Supabase Status
+supabase status
+```
+
+```bash Generate TypeScript Types
+supabase gen types typescript --local > src/types/database.ts
+```
+
+```bash Reset Database (Destructive!)
+supabase db reset
+```
+
+```bash View Database Logs
+supabase logs --project-ref your-project-ref
+```
+</CodeGroup>
+
+### Common Development Tasks
+
+<AccordionGroup>
+  <Accordion title="Add a new database table">
+    1. Create a new migration file: `supabase/migrations/002_new_feature.sql`
+    2. Write SQL for new table with RLS policies
+    3. Run migration: `supabase db push`
+    4. Generate new TypeScript types: `supabase gen types typescript`
+    5. Update queries in `src/lib/supabase/queries.ts`
+  </Accordion>
+  
+  <Accordion title="Add a new page route">
+    1. Create file in `src/app/your-route/page.tsx`
+    2. Export default component
+    3. Add to navigation in sidebar component
+    4. Update TypeScript types if needed
+  </Accordion>
+  
+  <Accordion title="Test API rate limiting">
+    The Jikan API has rate limits (3 requests/second). Test the rate limiter:
+    
+    ```typescript
+    import { searchAnime, clearAPICache } from '@/lib/animeApi';
+    
+    // Clear cache for testing
+    clearAPICache();
+    
+    // Make multiple rapid requests
+    const results = await Promise.all([
+      searchAnime('naruto'),
+      searchAnime('bleach'),
+      searchAnime('one piece')
+    ]);
+    
+    // Requests are automatically queued and rate-limited
+    ```
+  </Accordion>
+  
+  <Accordion title="Debug authentication issues">
+    1. Check `.env.local` has correct Supabase credentials
+    2. Verify cookies are enabled in browser
+    3. Check Supabase dashboard → Authentication → Users
+    4. Check browser DevTools → Network tab for failed requests
+    5. Check RLS policies in Supabase SQL Editor:
+    
+    ```sql
+    SELECT * FROM profiles WHERE id = auth.uid();
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<Warning>
+  **Build Errors After Installing Dependencies**
+  
+  Try:
+  ```bash
+  rm -rf node_modules
+  rm package-lock.json
+  npm install
+  ```
+</Warning>
+
+<Warning>
+  **Supabase Connection Failed**
+  
+  - Verify `.env.local` exists and has correct values
+  - Restart dev server after changing env vars
+  - Check Supabase project is active (not paused)
+  - Verify project URL matches exactly (including `https://`)
+</Warning>
+
+<Warning>
+  **Jikan API Errors (429 Rate Limited)**
+  
+  - The API client includes automatic rate limiting
+  - Wait 60 seconds and try again
+  - Check network tab for failed requests
+  - Consider implementing longer caching for development
+</Warning>
+
+<Warning>
+  **TypeScript Errors**
+  
+  - Run `npm run build` to see all errors
+  - Check `tsconfig.json` is not modified
+  - Regenerate database types: `supabase gen types typescript`
+  - Clear Next.js cache: `rm -rf .next`
+</Warning>
+
+## Testing
+
+### Manual Testing Checklist
+
+- [ ] Sign up new user
+- [ ] Sign in existing user
+- [ ] Search for anime
+- [ ] Add anime to list with all status types
+- [ ] Edit anime entry (status, episodes, rating)
+- [ ] Delete anime entry
+- [ ] Write review (all rating dimensions)
+- [ ] Save review as draft
+- [ ] Publish review
+- [ ] Vote on review (helpful/unhelpful)
+- [ ] Add comment to review
+- [ ] Create custom list
+- [ ] Add anime to custom list
+- [ ] Make custom list public
+- [ ] View another user's profile
+- [ ] Upload avatar
+- [ ] Update profile bio
+- [ ] View statistics on My Lists page
+- [ ] Test responsive design (mobile, tablet, desktop)
+
+## Contributing
+
+<Note>
+  Want to contribute? Check the GitHub issues for open tasks or submit a pull request with new features!
+</Note>
+
+### Contribution Guidelines
+
+1. **Fork the repository**
+2. **Create feature branch**: `git checkout -b feature/amazing-feature`
+3. **Make changes** with clear commit messages
+4. **Test thoroughly** using the checklist above
+5. **Run linter**: `npm run lint`
+6. **Submit pull request** with description of changes
+
+### Code Style
+
+- Use TypeScript for type safety
+- Follow ESLint rules (`npm run lint`)
+- Use Tailwind CSS utility classes
+- Write clear component and function names
+- Add comments for complex logic
+- Keep components small and focused
+
+## Deployment
+
+AniDojo can be deployed to various platforms:
+
+<CardGroup cols={2}>
+  <Card title="Vercel" icon="triangle">
+    Recommended for Next.js apps
+    
+    1. Connect GitHub repo
+    2. Add environment variables
+    3. Deploy automatically on push
+  </Card>
+  
+  <Card title="Netlify" icon="n">
+    Alternative with similar features
+    
+    Build command: `npm run build`
+    Publish directory: `.next`
+  </Card>
+  
+  <Card title="Docker" icon="docker">
+    For self-hosting
+    
+    Create `Dockerfile` with Node.js base image
+  </Card>
+  
+  <Card title="Railway" icon="train">
+    Easy deployment with database
+    
+    Connects to GitHub and auto-deploys
+  </Card>
+</CardGroup>
+
+### Environment Variables for Production
+
+Ensure these are set in your deployment platform:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+<Warning>
+  Never commit `.env.local` to version control! Use platform-specific environment variable settings.
+</Warning>
+
+## Additional Resources
+
+- [Next.js 15 Documentation](https://nextjs.org/docs)
+- [Supabase Documentation](https://supabase.com/docs)
+- [Jikan API Documentation](https://docs.api.jikan.moe/)
+- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+- [React 19 Documentation](https://react.dev)
+
+## Need Help?
+
+If you encounter issues during installation:
+
+1. Check this documentation thoroughly
+2. Search existing GitHub issues
+3. Open a new GitHub issue with:
+   - Error message
+   - Steps to reproduce
+   - Your environment (OS, Node version, etc.)
+   - Screenshots if applicable

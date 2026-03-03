@@ -1,0 +1,401 @@
+---
+title: 'Database Schema Setup'
+description: 'Set up the AniDojo PostgreSQL database schema and run migrations'
+icon: 'database'
+---
+
+## Overview
+
+AniDojo uses PostgreSQL through Supabase to store user data, anime entries, reviews, and more. The database schema includes Row Level Security (RLS) policies to ensure data privacy.
+
+## Database Schema Overview
+
+The AniDojo database consists of these main tables:
+
+- **profiles** - User profile information
+- **anime_entries** - User's anime watchlist entries
+- **reviews** - User reviews for anime
+- **review_votes** - Helpful/not helpful votes on reviews
+- **comments** - Comments on reviews
+- **comment_votes** - Upvotes/downvotes on comments
+- **custom_lists** - User-created anime lists
+- **custom_list_entries** - Anime entries in custom lists
+
+## Running the Migration
+
+You can set up your database using either the Supabase Dashboard or the Supabase CLI.
+
+### Option A: Using Supabase Dashboard (Recommended for Beginners)
+
+<Steps>
+  <Step title="Open SQL Editor">
+    In your Supabase dashboard, navigate to **SQL Editor** from the left sidebar.
+  </Step>
+
+  <Step title="Copy the migration SQL">
+    Open `supabase/migrations/001_initial_schema.sql` in your project and copy its contents.
+  </Step>
+
+  <Step title="Run the migration">
+    Paste the SQL into the editor and click **Run** or press `Ctrl/Cmd + Enter`.
+  </Step>
+
+  <Step title="Verify tables created">
+    Navigate to **Table Editor** and verify all tables appear:
+    - profiles
+    - anime_entries
+    - reviews
+    - review_votes
+    - comments
+    - comment_votes
+    - custom_lists
+    - custom_list_entries
+  </Step>
+</Steps>
+
+### Option B: Using Supabase CLI (Recommended for Production)
+
+<Steps>
+  <Step title="Install Supabase CLI">
+    ```bash
+    npm install -g supabase
+    ```
+  </Step>
+
+  <Step title="Link your project">
+    ```bash
+    supabase link --project-ref your-project-ref
+    ```
+    
+    Find your project ref in: **Settings** → **General** → **Project ID**
+  </Step>
+
+  <Step title="Push the migration">
+    ```bash
+    supabase db push
+    ```
+    
+    This will apply all migrations in the `supabase/migrations/` directory.
+  </Step>
+
+  <Step title="Verify migration">
+    ```bash
+    supabase db pull
+    ```
+  </Step>
+</Steps>
+
+## Database Tables
+
+### Profiles Table
+
+Extends Supabase Auth with additional user information.
+
+```sql
+CREATE TABLE public.profiles (
+  id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  username TEXT UNIQUE NOT NULL,
+  avatar_url TEXT,
+  bio TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+```
+
+<Accordion title="Profiles table details">
+  **Key Features:**
+  - Automatically created via trigger when user signs up
+  - Username defaults to email prefix if not provided
+  - Avatar URL points to Supabase Storage
+  - Updated timestamp automatically maintained
+</Accordion>
+
+### Anime Entries Table
+
+Stores user's anime watchlist with status, progress, and ratings.
+
+```sql
+CREATE TABLE public.anime_entries (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  anime_id INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN (
+    'watching', 'completed', 'on-hold', 'dropped', 'plan-to-watch'
+  )),
+  episodes_watched INTEGER DEFAULT 0 NOT NULL,
+  score INTEGER CHECK (score >= 1 AND score <= 10),
+  start_date DATE,
+  finish_date DATE,
+  notes TEXT,
+  favorite BOOLEAN DEFAULT false NOT NULL,
+  -- Additional fields...
+  UNIQUE(user_id, anime_id)
+);
+```
+
+<Accordion title="Anime entries table details">
+  **Status Values:**
+  - `watching` - Currently watching
+  - `completed` - Finished watching
+  - `on-hold` - Paused watching
+  - `dropped` - Stopped watching
+  - `plan-to-watch` - Planning to watch
+  
+  **Key Features:**
+  - One entry per user per anime (enforced by unique constraint)
+  - Score range: 1-10
+  - Tracks watch dates and episode progress
+  - Supports tags, notes, and favorites
+</Accordion>
+
+### Reviews Table
+
+Stores detailed user reviews with ratings and status.
+
+```sql
+CREATE TABLE public.reviews (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  anime_id INTEGER NOT NULL,
+  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 10),
+  story_rating INTEGER CHECK (story_rating >= 1 AND story_rating <= 10),
+  animation_rating INTEGER CHECK (animation_rating >= 1 AND animation_rating <= 10),
+  sound_rating INTEGER CHECK (sound_rating >= 1 AND sound_rating <= 10),
+  character_rating INTEGER CHECK (character_rating >= 1 AND character_rating <= 10),
+  enjoyment_rating INTEGER CHECK (enjoyment_rating >= 1 AND enjoyment_rating <= 10),
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  spoilers BOOLEAN DEFAULT false NOT NULL,
+  status TEXT DEFAULT 'draft' NOT NULL CHECK (status IN ('draft', 'published')),
+  helpful_votes INTEGER DEFAULT 0 NOT NULL,
+  -- Additional fields...
+);
+```
+
+<Accordion title="Reviews table details">
+  **Review Status:**
+  - `draft` - Saved but not public
+  - `published` - Publicly visible
+  
+  **Unique Constraint:**
+  Only one published review per user per anime (enforced by partial unique index)
+  
+  **Rating Categories:**
+  - Overall rating (required)
+  - Story, Animation, Sound, Character, Enjoyment (optional)
+  
+  **Helpful Votes:**
+  Automatically updated by database triggers when users vote
+</Accordion>
+
+## Row Level Security (RLS)
+
+All tables have RLS enabled to ensure users can only access their own data or public data.
+
+### Profiles Policies
+
+```sql
+-- Everyone can view profiles
+CREATE POLICY "Users can view all profiles"
+  ON public.profiles FOR SELECT
+  USING (true);
+
+-- Users can update their own profile
+CREATE POLICY "Users can update their own profile"
+  ON public.profiles FOR UPDATE
+  USING (auth.uid() = id);
+```
+
+### Anime Entries Policies
+
+```sql
+-- Users can only see their own entries
+CREATE POLICY "Users can view their own anime entries"
+  ON public.anime_entries FOR SELECT
+  USING (auth.uid() = user_id);
+
+-- Users can insert their own entries
+CREATE POLICY "Users can insert their own anime entries"
+  ON public.anime_entries FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+```
+
+### Reviews Policies
+
+```sql
+-- Anyone can view published reviews, users can see their own drafts
+CREATE POLICY "Anyone can view published reviews"
+  ON public.reviews FOR SELECT
+  USING (status = 'published' OR auth.uid() = user_id);
+```
+
+<Note>
+  RLS policies are enforced at the database level, providing security even if client code is compromised.
+</Note>
+
+## Database Triggers
+
+Automatic behaviors handled by PostgreSQL triggers:
+
+### Auto-Create Profile on Signup
+
+```sql
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, username)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1))
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+```
+
+### Auto-Update Timestamps
+
+```sql
+CREATE OR REPLACE FUNCTION public.handle_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_profiles_updated_at
+  BEFORE UPDATE ON public.profiles
+  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+```
+
+### Auto-Update Review Helpful Votes
+
+```sql
+CREATE OR REPLACE FUNCTION public.update_review_helpful_votes()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE public.reviews
+  SET helpful_votes = (
+    SELECT COUNT(*) FILTER (WHERE helpful = true) - 
+           COUNT(*) FILTER (WHERE helpful = false)
+    FROM public.review_votes
+    WHERE review_id = COALESCE(NEW.review_id, OLD.review_id)
+  )
+  WHERE id = COALESCE(NEW.review_id, OLD.review_id);
+  RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+```
+
+## Indexes
+
+Performance indexes for common queries:
+
+```sql
+-- Anime entries indexes
+CREATE INDEX idx_anime_entries_user_id ON public.anime_entries(user_id);
+CREATE INDEX idx_anime_entries_anime_id ON public.anime_entries(anime_id);
+CREATE INDEX idx_anime_entries_status ON public.anime_entries(status);
+
+-- Reviews indexes
+CREATE INDEX idx_reviews_user_id ON public.reviews(user_id);
+CREATE INDEX idx_reviews_anime_id ON public.reviews(anime_id);
+CREATE INDEX idx_reviews_status ON public.reviews(status);
+
+-- Partial unique index for published reviews
+CREATE UNIQUE INDEX idx_reviews_user_anime_published 
+ON public.reviews(user_id, anime_id) 
+WHERE status = 'published';
+```
+
+## Testing Your Database
+
+Verify your database setup with these queries:
+
+<CodeGroup>
+```sql Check Tables
+SELECT table_name 
+FROM information_schema.tables 
+WHERE table_schema = 'public'
+ORDER BY table_name;
+```
+
+```sql Check RLS Policies
+SELECT schemaname, tablename, policyname 
+FROM pg_policies 
+WHERE schemaname = 'public';
+```
+
+```sql Check Triggers
+SELECT trigger_name, event_object_table, action_timing, event_manipulation
+FROM information_schema.triggers
+WHERE trigger_schema = 'public';
+```
+</CodeGroup>
+
+## Using Query Functions
+
+AniDojo provides pre-built query functions in `src/lib/supabase/queries.ts`:
+
+```typescript
+import { 
+  getAnimeEntries, 
+  upsertAnimeEntry,
+  deleteAnimeEntry 
+} from '@/lib/supabase/queries';
+
+// Get user's anime entries
+const entries = await getAnimeEntries(userId);
+
+// Add or update an entry
+await upsertAnimeEntry({
+  user_id: userId,
+  anime_id: 1,
+  title: 'Attack on Titan',
+  status: 'watching',
+  episodes_watched: 5
+});
+
+// Delete an entry
+await deleteAnimeEntry(userId, animeId);
+```
+
+## Troubleshooting
+
+<Warning>
+  **"Row Level Security policy violation"**
+  
+  This means a user tried to access data they don't have permission for. Check:
+  - User is authenticated (`auth.uid()` returns a value)
+  - RLS policies allow the operation
+  - The user owns the data they're trying to access
+</Warning>
+
+### Profile not created on signup
+
+- Verify the `on_auth_user_created` trigger exists
+- Check the `handle_new_user()` function is defined
+- Look for errors in: **Database** → **Logs**
+
+### Slow queries
+
+- Check indexes are created: Run the indexes SQL section
+- View slow queries in: **Database** → **Query Performance**
+- Consider adding indexes for commonly filtered columns
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Storage Setup" icon="folder" href="/setup/storage">
+    Configure storage buckets for file uploads
+  </Card>
+  <Card title="Authentication" icon="lock" href="/setup/authentication">
+    Set up auth providers and email templates
+  </Card>
+</CardGroup>

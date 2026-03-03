@@ -1,0 +1,899 @@
+---
+title: 'TypeScript Types'
+description: 'TypeScript interfaces and type definitions for AniDojo database models'
+---
+
+## Overview
+
+All database types are defined in `src/types/database.ts` and match the PostgreSQL schema exactly. These types provide full type safety for database operations.
+
+```typescript
+import type { 
+  Profile, 
+  AnimeEntry, 
+  Review, 
+  ReviewVote,
+  Comment,
+  CommentVote,
+  CustomList,
+  CustomListEntry 
+} from '@/types/database';
+```
+
+---
+
+## Core Types
+
+### Profile
+
+User profile information extending Supabase Auth.
+
+```typescript
+interface Profile {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+  bio: string | null;
+  created_at: string;
+  updated_at: string;
+}
+```
+
+<ResponseField name="id" type="string" required>
+  User UUID from Supabase Auth (primary key)
+</ResponseField>
+
+<ResponseField name="username" type="string" required>
+  Unique username
+</ResponseField>
+
+<ResponseField name="avatar_url" type="string | null">
+  URL to avatar image in Supabase Storage
+</ResponseField>
+
+<ResponseField name="bio" type="string | null">
+  User biography text
+</ResponseField>
+
+<ResponseField name="created_at" type="string" required>
+  ISO 8601 timestamp when profile was created
+</ResponseField>
+
+<ResponseField name="updated_at" type="string" required>
+  ISO 8601 timestamp when profile was last updated
+</ResponseField>
+
+**Usage:**
+```typescript
+const profile: Profile = {
+  id: '550e8400-e29b-41d4-a716-446655440000',
+  username: 'otaku_master',
+  avatar_url: 'https://example.com/avatar.jpg',
+  bio: 'Anime enthusiast since 2010',
+  created_at: '2024-01-15T10:30:00Z',
+  updated_at: '2024-03-01T15:45:00Z'
+};
+```
+
+---
+
+### AnimeEntry
+
+User's anime list entry with watch status and metadata.
+
+```typescript
+interface AnimeEntry {
+  id: string;
+  user_id: string;
+  anime_id: number;
+  title: string;
+  title_english: string | null;
+  title_japanese: string | null;
+  image: string | null;
+  type: string | null;
+  episodes: number | null;
+  status: 'watching' | 'completed' | 'on-hold' | 'dropped' | 'plan-to-watch';
+  episodes_watched: number;
+  score: number | null;
+  start_date: string | null;
+  finish_date: string | null;
+  notes: string | null;
+  tags: string[];
+  favorite: boolean;
+  rewatch_count: number;
+  priority: 'low' | 'medium' | 'high' | null;
+  genres: string[];
+  year: number | null;
+  rating: string | null;
+  created_at: string;
+  updated_at: string;
+}
+```
+
+<ResponseField name="id" type="string" required>
+  Entry UUID (auto-generated)
+</ResponseField>
+
+<ResponseField name="user_id" type="string" required>
+  User UUID (foreign key to profiles)
+</ResponseField>
+
+<ResponseField name="anime_id" type="number" required>
+  ID from external anime API (e.g., MyAnimeList)
+</ResponseField>
+
+<ResponseField name="title" type="string" required>
+  Primary anime title
+</ResponseField>
+
+<ResponseField name="title_english" type="string | null">
+  English title translation
+</ResponseField>
+
+<ResponseField name="title_japanese" type="string | null">
+  Original Japanese title
+</ResponseField>
+
+<ResponseField name="image" type="string | null">
+  Cover image URL
+</ResponseField>
+
+<ResponseField name="type" type="string | null">
+  Anime type (TV, Movie, OVA, etc.)
+</ResponseField>
+
+<ResponseField name="episodes" type="number | null">
+  Total episode count
+</ResponseField>
+
+<ResponseField name="status" type="'watching' | 'completed' | 'on-hold' | 'dropped' | 'plan-to-watch'" required>
+  Current watch status
+</ResponseField>
+
+<ResponseField name="episodes_watched" type="number" required>
+  Episodes watched so far (default: 0)
+</ResponseField>
+
+<ResponseField name="score" type="number | null">
+  User rating from 1-10
+</ResponseField>
+
+<ResponseField name="start_date" type="string | null">
+  ISO 8601 date when started watching
+</ResponseField>
+
+<ResponseField name="finish_date" type="string | null">
+  ISO 8601 date when finished watching
+</ResponseField>
+
+<ResponseField name="notes" type="string | null">
+  Personal notes about the anime
+</ResponseField>
+
+<ResponseField name="tags" type="string[]" required>
+  Custom tags array (default: empty)
+</ResponseField>
+
+<ResponseField name="favorite" type="boolean" required>
+  Whether marked as favorite (default: false)
+</ResponseField>
+
+<ResponseField name="rewatch_count" type="number" required>
+  Number of times rewatched (default: 0)
+</ResponseField>
+
+<ResponseField name="priority" type="'low' | 'medium' | 'high' | null">
+  Priority level for plan-to-watch entries
+</ResponseField>
+
+<ResponseField name="genres" type="string[]" required>
+  Anime genres array (default: empty)
+</ResponseField>
+
+<ResponseField name="year" type="number | null">
+  Release year
+</ResponseField>
+
+<ResponseField name="rating" type="string | null">
+  Content rating (G, PG-13, R, etc.)
+</ResponseField>
+
+<ResponseField name="created_at" type="string" required>
+  ISO 8601 timestamp when entry was created
+</ResponseField>
+
+<ResponseField name="updated_at" type="string" required>
+  ISO 8601 timestamp when entry was last updated
+</ResponseField>
+
+**Usage:**
+```typescript
+const entry: AnimeEntry = {
+  id: '123e4567-e89b-12d3-a456-426614174000',
+  user_id: '550e8400-e29b-41d4-a716-446655440000',
+  anime_id: 1535,
+  title: 'Death Note',
+  title_english: 'Death Note',
+  title_japanese: 'デスノート',
+  image: 'https://cdn.myanimelist.net/images/anime/9/9453.jpg',
+  type: 'TV',
+  episodes: 37,
+  status: 'completed',
+  episodes_watched: 37,
+  score: 9,
+  start_date: '2024-01-01',
+  finish_date: '2024-01-20',
+  notes: 'Amazing psychological thriller',
+  tags: ['psychological', 'must-watch'],
+  favorite: true,
+  rewatch_count: 1,
+  priority: null,
+  genres: ['Mystery', 'Thriller', 'Supernatural'],
+  year: 2006,
+  rating: 'R',
+  created_at: '2024-01-01T00:00:00Z',
+  updated_at: '2024-01-20T12:00:00Z'
+};
+```
+
+---
+
+### Review
+
+Detailed anime review with ratings and publication status.
+
+```typescript
+interface Review {
+  id: string;
+  user_id: string;
+  anime_id: number;
+  rating: number;
+  story_rating: number | null;
+  animation_rating: number | null;
+  sound_rating: number | null;
+  character_rating: number | null;
+  enjoyment_rating: number | null;
+  title: string;
+  body: string;
+  spoilers: boolean;
+  watch_status: 'completed' | 'watching' | 'dropped' | 'plan-to-watch';
+  episodes_watched: number | null;
+  tags: string[];
+  pros: string | null;
+  cons: string | null;
+  recommendation: 'highly-recommend' | 'recommend' | 'mixed' | 'not-recommend' | 'strongly-not-recommend' | null;
+  status: 'draft' | 'published';
+  helpful_votes: number;
+  created_at: string;
+  updated_at: string;
+}
+```
+
+<ResponseField name="id" type="string" required>
+  Review UUID (auto-generated)
+</ResponseField>
+
+<ResponseField name="user_id" type="string" required>
+  Author's user UUID
+</ResponseField>
+
+<ResponseField name="anime_id" type="number" required>
+  Anime ID from external API
+</ResponseField>
+
+<ResponseField name="rating" type="number" required>
+  Overall rating from 1-10
+</ResponseField>
+
+<ResponseField name="story_rating" type="number | null">
+  Story/plot rating from 1-10
+</ResponseField>
+
+<ResponseField name="animation_rating" type="number | null">
+  Animation quality rating from 1-10
+</ResponseField>
+
+<ResponseField name="sound_rating" type="number | null">
+  Sound/music rating from 1-10
+</ResponseField>
+
+<ResponseField name="character_rating" type="number | null">
+  Character development rating from 1-10
+</ResponseField>
+
+<ResponseField name="enjoyment_rating" type="number | null">
+  Personal enjoyment rating from 1-10
+</ResponseField>
+
+<ResponseField name="title" type="string" required>
+  Review title/headline
+</ResponseField>
+
+<ResponseField name="body" type="string" required>
+  Full review content (supports markdown)
+</ResponseField>
+
+<ResponseField name="spoilers" type="boolean" required>
+  Whether review contains spoilers (default: false)
+</ResponseField>
+
+<ResponseField name="watch_status" type="'completed' | 'watching' | 'dropped' | 'plan-to-watch'" required>
+  Watch status when review was written
+</ResponseField>
+
+<ResponseField name="episodes_watched" type="number | null">
+  Episodes watched at time of review
+</ResponseField>
+
+<ResponseField name="tags" type="string[]" required>
+  Review tags array (default: empty)
+</ResponseField>
+
+<ResponseField name="pros" type="string | null">
+  Positive aspects summary
+</ResponseField>
+
+<ResponseField name="cons" type="string | null">
+  Negative aspects summary
+</ResponseField>
+
+<ResponseField name="recommendation" type="'highly-recommend' | 'recommend' | 'mixed' | 'not-recommend' | 'strongly-not-recommend' | null">
+  Recommendation level
+</ResponseField>
+
+<ResponseField name="status" type="'draft' | 'published'" required>
+  Publication status (default: 'draft')
+</ResponseField>
+
+<ResponseField name="helpful_votes" type="number" required>
+  Net helpful votes (helpful - not helpful, auto-updated)
+</ResponseField>
+
+<ResponseField name="created_at" type="string" required>
+  ISO 8601 timestamp when review was created
+</ResponseField>
+
+<ResponseField name="updated_at" type="string" required>
+  ISO 8601 timestamp when review was last updated
+</ResponseField>
+
+**Usage:**
+```typescript
+const review: Review = {
+  id: '789e0123-e89b-12d3-a456-426614174000',
+  user_id: '550e8400-e29b-41d4-a716-446655440000',
+  anime_id: 1535,
+  rating: 9,
+  story_rating: 10,
+  animation_rating: 8,
+  sound_rating: 9,
+  character_rating: 9,
+  enjoyment_rating: 10,
+  title: 'A Psychological Masterpiece',
+  body: 'Death Note is an exceptional anime that explores...',
+  spoilers: false,
+  watch_status: 'completed',
+  episodes_watched: 37,
+  tags: ['psychological', 'thriller', 'must-watch'],
+  pros: 'Brilliant mind games, excellent character development',
+  cons: 'Second half slightly weaker than first',
+  recommendation: 'highly-recommend',
+  status: 'published',
+  helpful_votes: 42,
+  created_at: '2024-02-01T10:00:00Z',
+  updated_at: '2024-02-15T14:30:00Z'
+};
+```
+
+---
+
+### ReviewVote
+
+Helpful/not helpful vote on a review.
+
+```typescript
+interface ReviewVote {
+  id: string;
+  review_id: string;
+  user_id: string;
+  helpful: boolean;
+  created_at: string;
+}
+```
+
+<ResponseField name="id" type="string" required>
+  Vote UUID (auto-generated)
+</ResponseField>
+
+<ResponseField name="review_id" type="string" required>
+  Review UUID being voted on
+</ResponseField>
+
+<ResponseField name="user_id" type="string" required>
+  Voter's user UUID
+</ResponseField>
+
+<ResponseField name="helpful" type="boolean" required>
+  True for helpful, false for not helpful
+</ResponseField>
+
+<ResponseField name="created_at" type="string" required>
+  ISO 8601 timestamp when vote was cast
+</ResponseField>
+
+**Usage:**
+```typescript
+const vote: ReviewVote = {
+  id: 'abc12345-e89b-12d3-a456-426614174000',
+  review_id: '789e0123-e89b-12d3-a456-426614174000',
+  user_id: '550e8400-e29b-41d4-a716-446655440000',
+  helpful: true,
+  created_at: '2024-02-05T12:00:00Z'
+};
+```
+
+---
+
+### Comment
+
+Comment on a review with threading support.
+
+```typescript
+interface Comment {
+  id: string;
+  review_id: string;
+  user_id: string;
+  parent_id: string | null;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+```
+
+<ResponseField name="id" type="string" required>
+  Comment UUID (auto-generated)
+</ResponseField>
+
+<ResponseField name="review_id" type="string" required>
+  Review UUID being commented on
+</ResponseField>
+
+<ResponseField name="user_id" type="string" required>
+  Commenter's user UUID
+</ResponseField>
+
+<ResponseField name="parent_id" type="string | null" required>
+  Parent comment UUID for replies (null for top-level)
+</ResponseField>
+
+<ResponseField name="content" type="string" required>
+  Comment text content
+</ResponseField>
+
+<ResponseField name="created_at" type="string" required>
+  ISO 8601 timestamp when comment was created
+</ResponseField>
+
+<ResponseField name="updated_at" type="string" required>
+  ISO 8601 timestamp when comment was last updated
+</ResponseField>
+
+<ResponseField name="deleted_at" type="string | null" required>
+  ISO 8601 timestamp when soft deleted (null if active)
+</ResponseField>
+
+**Usage:**
+```typescript
+// Top-level comment
+const comment: Comment = {
+  id: 'def67890-e89b-12d3-a456-426614174000',
+  review_id: '789e0123-e89b-12d3-a456-426614174000',
+  user_id: '550e8400-e29b-41d4-a716-446655440000',
+  parent_id: null,
+  content: 'Great review! I totally agree.',
+  created_at: '2024-02-10T15:30:00Z',
+  updated_at: '2024-02-10T15:30:00Z',
+  deleted_at: null
+};
+
+// Reply to comment
+const reply: Comment = {
+  id: 'ghi24680-e89b-12d3-a456-426614174000',
+  review_id: '789e0123-e89b-12d3-a456-426614174000',
+  user_id: '661f9511-f3e-52e5-b827-557766551111',
+  parent_id: 'def67890-e89b-12d3-a456-426614174000',
+  content: 'Thanks for reading!',
+  created_at: '2024-02-10T16:00:00Z',
+  updated_at: '2024-02-10T16:00:00Z',
+  deleted_at: null
+};
+```
+
+---
+
+### CommentVote
+
+Upvote/downvote on a comment.
+
+```typescript
+interface CommentVote {
+  id: string;
+  comment_id: string;
+  user_id: string;
+  upvote: boolean;
+  created_at: string;
+}
+```
+
+<ResponseField name="id" type="string" required>
+  Vote UUID (auto-generated)
+</ResponseField>
+
+<ResponseField name="comment_id" type="string" required>
+  Comment UUID being voted on
+</ResponseField>
+
+<ResponseField name="user_id" type="string" required>
+  Voter's user UUID
+</ResponseField>
+
+<ResponseField name="upvote" type="boolean" required>
+  True for upvote, false for downvote
+</ResponseField>
+
+<ResponseField name="created_at" type="string" required>
+  ISO 8601 timestamp when vote was cast
+</ResponseField>
+
+**Usage:**
+```typescript
+const commentVote: CommentVote = {
+  id: 'jkl13579-e89b-12d3-a456-426614174000',
+  comment_id: 'def67890-e89b-12d3-a456-426614174000',
+  user_id: '550e8400-e29b-41d4-a716-446655440000',
+  upvote: true,
+  created_at: '2024-02-11T09:00:00Z'
+};
+```
+
+---
+
+### CustomList
+
+User-created custom anime list.
+
+```typescript
+interface CustomList {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  is_public: boolean;
+  created_at: string;
+  updated_at: string;
+}
+```
+
+<ResponseField name="id" type="string" required>
+  List UUID (auto-generated)
+</ResponseField>
+
+<ResponseField name="user_id" type="string" required>
+  Owner's user UUID
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  List name/title
+</ResponseField>
+
+<ResponseField name="description" type="string | null">
+  List description
+</ResponseField>
+
+<ResponseField name="is_public" type="boolean" required>
+  Whether list is publicly visible (default: false)
+</ResponseField>
+
+<ResponseField name="created_at" type="string" required>
+  ISO 8601 timestamp when list was created
+</ResponseField>
+
+<ResponseField name="updated_at" type="string" required>
+  ISO 8601 timestamp when list was last updated
+</ResponseField>
+
+**Usage:**
+```typescript
+const list: CustomList = {
+  id: 'mno97531-e89b-12d3-a456-426614174000',
+  user_id: '550e8400-e29b-41d4-a716-446655440000',
+  name: 'Best Psychological Thrillers',
+  description: 'Mind-bending anime that keep you on edge',
+  is_public: true,
+  created_at: '2024-01-05T10:00:00Z',
+  updated_at: '2024-02-01T14:00:00Z'
+};
+```
+
+---
+
+### CustomListEntry
+
+Anime entry within a custom list.
+
+```typescript
+interface CustomListEntry {
+  id: string;
+  list_id: string;
+  anime_id: number;
+  created_at: string;
+}
+```
+
+<ResponseField name="id" type="string" required>
+  Entry UUID (auto-generated)
+</ResponseField>
+
+<ResponseField name="list_id" type="string" required>
+  Custom list UUID
+</ResponseField>
+
+<ResponseField name="anime_id" type="number" required>
+  Anime ID from external API
+</ResponseField>
+
+<ResponseField name="created_at" type="string" required>
+  ISO 8601 timestamp when anime was added to list
+</ResponseField>
+
+**Usage:**
+```typescript
+const listEntry: CustomListEntry = {
+  id: 'pqr86420-e89b-12d3-a456-426614174000',
+  list_id: 'mno97531-e89b-12d3-a456-426614174000',
+  anime_id: 1535, // Death Note
+  created_at: '2024-01-05T11:00:00Z'
+};
+```
+
+---
+
+## Extended Types
+
+Types with joined data from related tables.
+
+### ReviewWithProfile
+
+Review with author profile information.
+
+```typescript
+interface ReviewWithProfile extends Review {
+  profiles: Profile;
+}
+```
+
+**Usage:**
+```typescript
+const reviewWithProfile: ReviewWithProfile = {
+  // All Review fields
+  id: '789e0123-e89b-12d3-a456-426614174000',
+  user_id: '550e8400-e29b-41d4-a716-446655440000',
+  anime_id: 1535,
+  rating: 9,
+  // ... other review fields
+  
+  // Joined profile data
+  profiles: {
+    id: '550e8400-e29b-41d4-a716-446655440000',
+    username: 'otaku_master',
+    avatar_url: 'https://example.com/avatar.jpg',
+    bio: 'Anime enthusiast',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-03-01T00:00:00Z'
+  }
+};
+```
+
+---
+
+### CommentWithProfile
+
+Comment with author profile and optional nested replies.
+
+```typescript
+interface CommentWithProfile extends Comment {
+  profiles: Profile;
+  replies?: CommentWithProfile[];
+}
+```
+
+**Usage:**
+```typescript
+const commentWithProfile: CommentWithProfile = {
+  // All Comment fields
+  id: 'def67890-e89b-12d3-a456-426614174000',
+  review_id: '789e0123-e89b-12d3-a456-426614174000',
+  user_id: '550e8400-e29b-41d4-a716-446655440000',
+  parent_id: null,
+  content: 'Great review!',
+  created_at: '2024-02-10T15:30:00Z',
+  updated_at: '2024-02-10T15:30:00Z',
+  deleted_at: null,
+  
+  // Joined profile data
+  profiles: {
+    id: '550e8400-e29b-41d4-a716-446655440000',
+    username: 'otaku_master',
+    avatar_url: 'https://example.com/avatar.jpg',
+    bio: 'Anime enthusiast',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-03-01T00:00:00Z'
+  },
+  
+  // Optional nested replies
+  replies: [
+    // Array of CommentWithProfile for threaded discussions
+  ]
+};
+```
+
+---
+
+### AnimeEntryWithAnime
+
+Anime entry that can be extended with external API data.
+
+```typescript
+interface AnimeEntryWithAnime extends AnimeEntry {
+  // Can be extended with anime data from external API
+}
+```
+
+<Info>
+This type is designed to be extended in your application with data from external anime APIs like MyAnimeList or Jikan.
+</Info>
+
+---
+
+## Type Guards
+
+Helper functions for type checking:
+
+```typescript
+// Check if review is published
+function isPublished(review: Review): boolean {
+  return review.status === 'published';
+}
+
+// Check if comment is deleted
+function isDeleted(comment: Comment): boolean {
+  return comment.deleted_at !== null;
+}
+
+// Check if entry is completed
+function isCompleted(entry: AnimeEntry): boolean {
+  return entry.status === 'completed';
+}
+```
+
+---
+
+## Utility Types
+
+Common TypeScript utility types for database operations:
+
+```typescript
+// Type for creating a new anime entry (without auto-generated fields)
+type NewAnimeEntry = Omit<AnimeEntry, 'id' | 'created_at' | 'updated_at'>;
+
+// Type for updating an anime entry (all fields optional except id)
+type UpdateAnimeEntry = Partial<AnimeEntry> & { id: string };
+
+// Type for creating a new review
+type NewReview = Omit<Review, 'id' | 'created_at' | 'updated_at' | 'helpful_votes'>;
+
+// Type for review with optional id (for upsert operations)
+type UpsertReview = Omit<Review, 'created_at' | 'updated_at' | 'helpful_votes'> & { id?: string };
+```
+
+---
+
+## Usage Examples
+
+### With Query Functions
+
+```typescript
+import { getAnimeEntries, upsertAnimeEntry } from '@/lib/supabase/queries';
+import type { AnimeEntry } from '@/types/database';
+
+// Type-safe query
+const entries: AnimeEntry[] = await getAnimeEntries(userId);
+
+// Type-safe upsert
+const newEntry: Omit<AnimeEntry, 'id' | 'created_at' | 'updated_at'> = {
+  user_id: userId,
+  anime_id: 1535,
+  title: 'Death Note',
+  status: 'watching',
+  episodes_watched: 0,
+  tags: [],
+  favorite: false,
+  rewatch_count: 0,
+  genres: []
+};
+
+const created: AnimeEntry = await upsertAnimeEntry(newEntry);
+```
+
+### With React State
+
+```typescript
+import { useState, useEffect } from 'react';
+import type { Review, ReviewWithProfile } from '@/types/database';
+
+function ReviewList() {
+  const [reviews, setReviews] = useState<ReviewWithProfile[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  
+  useEffect(() => {
+    loadReviews();
+  }, []);
+  
+  async function loadReviews() {
+    // Type-safe API call
+    const data = await fetchReviewsWithProfiles();
+    setReviews(data);
+    setLoading(false);
+  }
+  
+  return (
+    <div>
+      {reviews.map(review => (
+        <div key={review.id}>
+          <h3>{review.title}</h3>
+          <p>By {review.profiles.username}</p>
+          <p>Rating: {review.rating}/10</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### With Form Validation
+
+```typescript
+import type { Review } from '@/types/database';
+
+function validateReview(review: Partial<Review>): string[] {
+  const errors: string[] = [];
+  
+  if (!review.title || review.title.trim().length === 0) {
+    errors.push('Title is required');
+  }
+  
+  if (!review.body || review.body.trim().length < 100) {
+    errors.push('Review must be at least 100 characters');
+  }
+  
+  if (!review.rating || review.rating < 1 || review.rating > 10) {
+    errors.push('Rating must be between 1 and 10');
+  }
+  
+  const validStatuses: Review['status'][] = ['draft', 'published'];
+  if (review.status && !validStatuses.includes(review.status)) {
+    errors.push('Invalid status');
+  }
+  
+  return errors;
+}
+```
+
+---
+
+## See Also
+
+- [Database Schema](/api/database/schema) - Complete schema documentation
+- [Query Functions](/api/database/queries) - Database query functions
+- [Supabase Usage Guide](https://github.com/yourusername/anidojo/blob/main/SUPABASE_USAGE.md) - Usage examples and best practices

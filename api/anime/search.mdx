@@ -1,0 +1,451 @@
+---
+title: 'searchAnime()'
+description: 'Search for anime by query string with pagination support'
+---
+
+## Overview
+
+The `searchAnime()` function searches MyAnimeList's anime database using a query string. Returns paginated results with metadata.
+
+## Function Signature
+
+```typescript
+searchAnime(
+  query: string,
+  page?: number,
+  limit?: number
+): Promise<JikanSearchResponse>
+```
+
+## Parameters
+
+<ParamField path="query" type="string" required>
+  Search query string. Can include:
+  - Anime titles (English or Japanese)
+  - Partial matches (e.g., "attack" matches "Attack on Titan")
+  - Special characters (automatically URL-encoded)
+  
+  **Example**: `"Naruto"`, `"進撃の巨人"`, `"demon slayer"`
+</ParamField>
+
+<ParamField path="page" type="number" default="1">
+  Page number for pagination. Must be a positive integer.
+  
+  - **Minimum**: 1
+  - **Default**: 1
+  - Use `pagination.last_visible_page` to determine max page
+</ParamField>
+
+<ParamField path="limit" type="number" default="20">
+  Number of results per page.
+  
+  - **Minimum**: 1
+  - **Maximum**: 25 (API limitation)
+  - **Default**: 20
+</ParamField>
+
+## Return Value
+
+Returns a Promise that resolves to a `JikanSearchResponse` object.
+
+<ResponseField name="data" type="JikanAnime[]" required>
+  Array of anime objects matching the search query. Each object contains full anime details.
+  
+  See [JikanAnime interface](/api/anime/overview#jikananime-interface) for complete structure.
+</ResponseField>
+
+<ResponseField name="pagination" type="object" required>
+  Pagination metadata for navigating results
+  
+  <Expandable title="properties">
+    <ResponseField name="last_visible_page" type="number">
+      Total number of pages available
+    </ResponseField>
+    
+    <ResponseField name="has_next_page" type="boolean">
+      Whether another page exists after current page
+    </ResponseField>
+    
+    <ResponseField name="current_page" type="number">
+      Current page number (matches input parameter)
+    </ResponseField>
+    
+    <ResponseField name="items" type="object">
+      Item count information
+      <Expandable title="properties">
+        <ResponseField name="count" type="number">
+          Number of items on current page
+        </ResponseField>
+        <ResponseField name="total" type="number">
+          Total items across all pages
+        </ResponseField>
+        <ResponseField name="per_page" type="number">
+          Maximum items per page
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Examples
+
+### Basic Search
+
+<CodeGroup>
+```typescript Simple Query
+import { searchAnime } from '@/lib/animeApi';
+
+const results = await searchAnime('Naruto');
+
+console.log(`Found ${results.data.length} results`);
+console.log(`Page ${results.pagination.current_page} of ${results.pagination.last_visible_page}`);
+
+results.data.forEach(anime => {
+  console.log(`- ${anime.title} (Score: ${anime.score})`);
+});
+```
+
+```typescript With Pagination
+// Get first page
+const page1 = await searchAnime('One Piece', 1, 10);
+
+console.log(`Showing ${page1.data.length} of ${page1.pagination.items.total}`);
+
+// Get second page
+if (page1.pagination.has_next_page) {
+  const page2 = await searchAnime('One Piece', 2, 10);
+  console.log(`Page 2: ${page2.data.length} more results`);
+}
+```
+</CodeGroup>
+
+### Advanced Usage
+
+<CodeGroup>
+```typescript Pagination Loop
+import { searchAnime, type JikanAnime } from '@/lib/animeApi';
+
+const allResults: JikanAnime[] = [];
+let page = 1;
+let hasMore = true;
+
+while (hasMore && page <= 3) { // Limit to 3 pages
+  const response = await searchAnime('action', page, 25);
+  
+  allResults.push(...response.data);
+  hasMore = response.pagination.has_next_page;
+  page++;
+}
+
+console.log(`Collected ${allResults.length} anime total`);
+```
+
+```typescript With Error Handling
+async function searchWithRetry(query: string, maxAttempts = 3) {
+  for (let i = 0; i < maxAttempts; i++) {
+    try {
+      return await searchAnime(query);
+    } catch (error) {
+      if (i === maxAttempts - 1) throw error;
+      
+      console.log(`Attempt ${i + 1} failed, retrying...`);
+      await new Promise(r => setTimeout(r, 1000));
+    }
+  }
+}
+
+const results = await searchWithRetry('Demon Slayer');
+```
+</CodeGroup>
+
+### Filtering Results
+
+<CodeGroup>
+```typescript By Score
+const results = await searchAnime('anime', 1, 25);
+
+// Filter for highly-rated anime only
+const topRated = results.data.filter(anime => anime.score >= 8.0);
+
+console.log(`Found ${topRated.length} anime with score >= 8.0`);
+topRated.forEach(anime => {
+  console.log(`${anime.title}: ${anime.score}/10`);
+});
+```
+
+```typescript By Type and Status
+const results = await searchAnime('shounen');
+
+// Only TV series that finished airing
+const completed = results.data.filter(anime => 
+  anime.type === 'TV' && 
+  anime.status === 'Finished Airing'
+);
+
+console.log(`${completed.length} completed TV series`);
+```
+
+```typescript By Genre
+const results = await searchAnime('fantasy');
+
+// Find anime with specific genre
+const actionFantasy = results.data.filter(anime =>
+  anime.genres.some(g => g.name === 'Action') &&
+  anime.genres.some(g => g.name === 'Fantasy')
+);
+
+console.log(`${actionFantasy.length} Action/Fantasy anime`);
+```
+</CodeGroup>
+
+## React Hook Usage
+
+For React components, use the `useAnimeSearch` hook:
+
+<CodeGroup>
+```tsx Basic Component
+import { useAnimeSearch } from '@/hooks/useAnime';
+
+function SearchResults({ query }: { query: string }) {
+  const { data, loading, error, hasNextPage } = useAnimeSearch(query);
+  
+  if (loading) return <div>Searching...</div>;
+  if (error) return <div>Error: {error}</div>;
+  if (data.length === 0) return <div>No results found</div>;
+  
+  return (
+    <div>
+      <h2>Found {data.length} anime</h2>
+      {data.map(anime => (
+        <div key={anime.id}>
+          <h3>{anime.title}</h3>
+          <p>{anime.synopsis}</p>
+        </div>
+      ))}
+      {hasNextPage && <button>Load More</button>}
+    </div>
+  );
+}
+```
+
+```tsx With Pagination
+import { useState } from 'react';
+import { useAnimeSearch } from '@/hooks/useAnime';
+
+function PaginatedSearch() {
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  
+  const { data, loading, hasNextPage } = useAnimeSearch(query, page);
+  
+  return (
+    <div>
+      <input 
+        value={query}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setPage(1); // Reset to page 1 on new search
+        }}
+        placeholder="Search anime..."
+      />
+      
+      {loading && <div>Loading...</div>}
+      
+      <div className="results">
+        {data.map(anime => (
+          <AnimeCard key={anime.id} anime={anime} />
+        ))}
+      </div>
+      
+      <div className="pagination">
+        <button 
+          onClick={() => setPage(p => p - 1)}
+          disabled={page === 1}
+        >
+          Previous
+        </button>
+        
+        <span>Page {page}</span>
+        
+        <button 
+          onClick={() => setPage(p => p + 1)}
+          disabled={!hasNextPage}
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
+}
+```
+</CodeGroup>
+
+## Performance Considerations
+
+### Caching
+
+Searches are automatically cached for 5 minutes:
+
+```typescript
+// First call - fetches from API
+const results1 = await searchAnime('Naruto');
+
+// Within 5 minutes - returns cached data
+const results2 = await searchAnime('Naruto');
+
+// After 5 minutes - fetches fresh data
+const results3 = await searchAnime('Naruto');
+```
+
+### Rate Limiting
+
+The function handles rate limiting automatically:
+
+- Maximum 3 requests per second
+- Requests are queued when limit reached
+- Automatic retry with exponential backoff on 429 errors
+
+```typescript
+// All three searches will be queued automatically
+const [anime1, anime2, anime3] = await Promise.all([
+  searchAnime('Naruto'),
+  searchAnime('One Piece'),
+  searchAnime('Bleach')
+]);
+
+// Executes in sequence: 0ms, 350ms, 700ms
+```
+
+### Optimization Tips
+
+<Tip>
+  **Debounce search inputs**: Wait for user to stop typing before searching
+  
+  ```typescript
+  import { debounce } from 'lodash';
+  
+  const debouncedSearch = debounce(async (query: string) => {
+    const results = await searchAnime(query);
+    setResults(results);
+  }, 300);
+  ```
+</Tip>
+
+<Tip>
+  **Use appropriate page limits**: Smaller limits (10-15) load faster and reduce bandwidth
+  
+  ```typescript
+  // Good for mobile
+  await searchAnime('anime', 1, 10);
+  
+  // Good for desktop
+  await searchAnime('anime', 1, 25);
+  ```
+</Tip>
+
+## Common Use Cases
+
+### Autocomplete Search
+
+```typescript
+async function autocomplete(partial: string) {
+  if (partial.length < 3) return [];
+  
+  const results = await searchAnime(partial, 1, 5);
+  return results.data.map(anime => ({
+    label: anime.title,
+    value: anime.mal_id,
+    image: anime.images.jpg.small_image_url
+  }));
+}
+```
+
+### Search with Filters
+
+```typescript
+interface SearchFilters {
+  query: string;
+  minScore?: number;
+  type?: string;
+  status?: string;
+}
+
+async function filteredSearch(filters: SearchFilters) {
+  const results = await searchAnime(filters.query);
+  
+  return results.data.filter(anime => {
+    if (filters.minScore && anime.score < filters.minScore) return false;
+    if (filters.type && anime.type !== filters.type) return false;
+    if (filters.status && anime.status !== filters.status) return false;
+    return true;
+  });
+}
+
+// Usage
+const topTVShows = await filteredSearch({
+  query: 'action',
+  minScore: 8.0,
+  type: 'TV',
+  status: 'Finished Airing'
+});
+```
+
+## Error Handling
+
+Possible errors:
+
+<ResponseField name="API request failed" type="Error">
+  Network error or non-200 status code
+  
+  ```typescript
+  try {
+    await searchAnime('test');
+  } catch (error) {
+    // Check if network error
+    if (error instanceof TypeError) {
+      console.error('Network error');
+    }
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="Max retries exceeded" type="Error">
+  Failed after 3 retry attempts
+  
+  ```typescript
+  try {
+    await searchAnime('test');
+  } catch (error) {
+    if (error.message === 'Max retries exceeded') {
+      console.error('API is down or unreachable');
+    }
+  }
+  ```
+</ResponseField>
+
+## API Endpoint
+
+This function calls the Jikan API endpoint:
+
+```
+GET https://api.jikan.moe/v4/anime?q={query}&page={page}&limit={limit}
+```
+
+See [Jikan API Documentation](https://docs.api.jikan.moe/#tag/anime/operation/getAnimeSearch) for endpoint details.
+
+## See Also
+
+<CardGroup cols={2}>
+  <Card title="getTopAnime()" icon="trophy" href="/api/anime/top-anime">
+    Get highest-rated anime without search query
+  </Card>
+  <Card title="getSeasonalAnime()" icon="calendar" href="/api/anime/seasonal">
+    Browse anime by season and year
+  </Card>
+  <Card title="JikanAnime Interface" icon="code" href="/api/anime/overview#jikananime-interface">
+    Complete type definition for anime objects
+  </Card>
+  <Card title="Database Queries" icon="database" href="/api/database/queries">
+    Store and retrieve anime entries from database
+  </Card>
+</CardGroup>

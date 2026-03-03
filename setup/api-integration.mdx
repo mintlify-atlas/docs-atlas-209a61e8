@@ -1,0 +1,524 @@
+---
+title: 'Jikan API Integration'
+description: 'Integrate MyAnimeList data via the Jikan API for anime search and browsing'
+icon: 'link'
+---
+
+## Overview
+
+AniDojo uses the [Jikan API](https://jikan.moe/) to fetch anime data from MyAnimeList. Jikan is a free, unofficial REST API that provides comprehensive anime, manga, and character information from the largest anime database.
+
+## Why Jikan API?
+
+<CardGroup cols={2}>
+  <Card title="Free & No API Key" icon="key">
+    No registration or API key required. Start using immediately.
+  </Card>
+  <Card title="Comprehensive Data" icon="database">
+    50,000+ anime with detailed information from MyAnimeList.
+  </Card>
+  <Card title="Real-Time Updates" icon="clock">
+    Live data synced with MyAnimeList database.
+  </Card>
+  <Card title="Rich Metadata" icon="tag">
+    Genres, studios, ratings, episodes, and more.
+  </Card>
+</CardGroup>
+
+## No Configuration Required
+
+Unlike most APIs, Jikan requires **no setup or credentials**. The integration is ready to use out of the box!
+
+<Note>
+  No environment variables or API keys needed. Just start making requests!
+</Note>
+
+## Rate Limiting
+
+Jikan has rate limits to ensure fair usage:
+
+- **3 requests per second**
+- **60 requests per minute**
+
+AniDojo's API client handles this automatically with built-in rate limiting and request queuing.
+
+## API Client Implementation
+
+The API client is located in `src/lib/animeApi.ts` and includes:
+
+<Accordion title="Automatic Rate Limiting">
+  Requests are automatically queued and throttled:
+  
+  ```typescript
+  class APIRateLimiter {
+    private minInterval = 350; // 350ms = ~3 requests/second
+    private queue: Array<Request> = [];
+    
+    async call<T>(url: string): Promise<T> {
+      // Queues request and processes with rate limiting
+    }
+  }
+  ```
+</Accordion>
+
+<Accordion title="Request Caching">
+  Responses are cached for 5 minutes to reduce API calls:
+  
+  ```typescript
+  private cache = new Map<string, { data: any; timestamp: number }>();
+  private cacheExpiry = 5 * 60 * 1000; // 5 minutes
+  ```
+</Accordion>
+
+<Accordion title="Automatic Retries">
+  Failed requests are automatically retried with exponential backoff:
+  
+  ```typescript
+  private async fetchWithRetry(
+    url: string,
+    retries = 3,
+    backoff = 1000
+  ): Promise<Response> {
+    // Retry logic with exponential backoff
+  }
+  ```
+</Accordion>
+
+## Available API Functions
+
+All API functions are exported from `src/lib/animeApi.ts`:
+
+### Search Anime
+
+Search for anime by title:
+
+```typescript
+import { searchAnime } from '@/lib/animeApi';
+
+const results = await searchAnime('Naruto', 1, 20);
+// Returns: { data: JikanAnime[], pagination: {...} }
+```
+
+**Parameters:**
+- `query` - Search term
+- `page` - Page number (default: 1)
+- `limit` - Results per page (default: 20, max: 25)
+
+### Get Top Anime
+
+Fetch the highest-rated anime:
+
+```typescript
+import { getTopAnime } from '@/lib/animeApi';
+
+const topAnime = await getTopAnime(1, 20);
+// Returns top-rated anime from MyAnimeList
+```
+
+**Optional Filters:**
+```typescript
+// Filter by type
+const topTV = await getTopAnime(1, 20, 'tv');
+const topMovies = await getTopAnime(1, 20, 'movie');
+```
+
+### Get Anime by ID
+
+Fetch detailed information for a specific anime:
+
+```typescript
+import { getAnimeById } from '@/lib/animeApi';
+
+const anime = await getAnimeById(1);
+// Returns full anime details
+```
+
+### Get Seasonal Anime
+
+Fetch anime from a specific season:
+
+```typescript
+import { getSeasonalAnime } from '@/lib/animeApi';
+
+const winterAnime = await getSeasonalAnime(2024, 'winter');
+const springAnime = await getSeasonalAnime(2024, 'spring');
+```
+
+**Seasons:** `winter`, `spring`, `summer`, `fall`
+
+### Get Current Season
+
+Fetch anime airing this season:
+
+```typescript
+import { getCurrentSeasonAnime } from '@/lib/animeApi';
+
+const currentSeason = await getCurrentSeasonAnime(20);
+```
+
+## Jikan API Response Format
+
+All responses follow this structure:
+
+```typescript
+interface JikanSearchResponse {
+  data: JikanAnime[];
+  pagination: {
+    last_visible_page: number;
+    has_next_page: boolean;
+    current_page: number;
+    items: {
+      count: number;
+      total: number;
+      per_page: number;
+    };
+  };
+}
+```
+
+### Anime Object Structure
+
+```typescript
+interface JikanAnime {
+  mal_id: number;                   // MyAnimeList ID
+  title: string;                    // Romaji title
+  title_english?: string;           // English title
+  title_japanese?: string;          // Japanese title
+  images: {                         // Cover art images
+    jpg: {
+      image_url: string;            // Medium size
+      small_image_url: string;
+      large_image_url: string;
+    };
+    webp: { /* same structure */ };
+  };
+  type: string;                     // TV, Movie, OVA, etc.
+  episodes: number;                 // Total episodes
+  status: string;                   // Airing status
+  aired: {
+    from: string;                   // Start date
+    to: string;                     // End date
+  };
+  score: number;                    // MyAnimeList score (1-10)
+  rank: number;                     // Ranking position
+  popularity: number;               // Popularity rank
+  synopsis: string;                 // Plot description
+  genres: Array<{                   // Genre tags
+    mal_id: number;
+    name: string;
+  }>;
+  studios: Array<{                  // Animation studios
+    mal_id: number;
+    name: string;
+  }>;
+  // ... and more!
+}
+```
+
+## Converting to AniDojo Format
+
+Convert Jikan data to AniDojo's internal format:
+
+```typescript
+import { convertJikanToAnime } from '@/lib/animeApi';
+import type { JikanAnime } from '@/lib/animeApi';
+
+const jikanAnime: JikanAnime = { /* ... */ };
+const anime = convertJikanToAnime(jikanAnime);
+
+// Returns:
+{
+  id: 'mal-1',
+  title: 'Cowboy Bebop',
+  synopsis: '...',
+  genres: ['Action', 'Adventure', 'Sci-Fi'],
+  studio: 'Sunrise',
+  year: 1998,
+  episodes: 26,
+  status: 'COMPLETED',
+  coverArt: 'https://cdn.myanimelist.net/...',
+  staff: { /* ... */ }
+}
+```
+
+## React Hooks for Anime Data
+
+AniDojo provides custom React hooks in `src/hooks/useAnime.ts`:
+
+### useAnimeSearch Hook
+
+```typescript
+import { useAnimeSearch } from '@/hooks/useAnime';
+
+function SearchComponent() {
+  const { data, loading, error, hasNextPage } = useAnimeSearch('Naruto', 1);
+  
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  
+  return (
+    <div>
+      {data.map(anime => (
+        <AnimeCard key={anime.mal_id} anime={anime} />
+      ))}
+    </div>
+  );
+}
+```
+
+### useTopAnime Hook
+
+```typescript
+import { useTopAnime } from '@/hooks/useAnime';
+
+function TopAnimeComponent() {
+  const { data, loading, error } = useTopAnime(1, 20);
+  
+  return (
+    <div>
+      {data.map(anime => (
+        <AnimeCard key={anime.mal_id} anime={anime} />
+      ))}
+    </div>
+  );
+}
+```
+
+## Example: Search Page
+
+Here's how the search page uses the API:
+
+```typescript app/search/page.tsx
+'use client';
+
+import { useState } from 'react';
+import { useAnimeSearch } from '@/hooks/useAnime';
+import { AnimeSearch } from '@/components/AnimeSearch';
+
+export default function SearchPage() {
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  
+  const { data, loading, error, hasNextPage } = useAnimeSearch(query, page);
+  
+  return (
+    <div>
+      <AnimeSearch 
+        onSearch={setQuery}
+        results={data}
+        loading={loading}
+        error={error}
+      />
+      
+      {/* Pagination */}
+      <div>
+        <button 
+          onClick={() => setPage(p => Math.max(1, p - 1))}
+          disabled={page === 1}
+        >
+          Previous
+        </button>
+        
+        <span>Page {page}</span>
+        
+        <button 
+          onClick={() => setPage(p => p + 1)}
+          disabled={!hasNextPage}
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
+}
+```
+
+## Caching Strategies
+
+### Built-in Cache
+
+The API client includes automatic caching:
+
+```typescript
+// First call - fetches from API
+const anime1 = await searchAnime('Naruto');
+
+// Second call within 5 minutes - uses cache
+const anime2 = await searchAnime('Naruto');
+```
+
+### Clear Cache
+
+Manually clear the cache when needed:
+
+```typescript
+import { clearAPICache } from '@/lib/animeApi';
+
+// Clear all cached responses
+clearAPICache();
+```
+
+### React Query (Optional)
+
+For more advanced caching, consider adding React Query:
+
+```bash
+npm install @tanstack/react-query
+```
+
+```typescript
+import { useQuery } from '@tanstack/react-query';
+import { searchAnime } from '@/lib/animeApi';
+
+function useAnimeSearch(query: string) {
+  return useQuery({
+    queryKey: ['anime', 'search', query],
+    queryFn: () => searchAnime(query),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+```
+
+## Error Handling
+
+The API client handles errors gracefully:
+
+<CodeGroup>
+```typescript Basic Error Handling
+try {
+  const anime = await searchAnime('Naruto');
+} catch (error) {
+  if (error.message.includes('429')) {
+    // Rate limited - already handled with retries
+    console.error('API rate limited');
+  } else if (error.message.includes('network')) {
+    // Network error
+    console.error('Network error');
+  } else {
+    // Other error
+    console.error('API error:', error);
+  }
+}
+```
+
+```typescript With User Feedback
+const [error, setError] = useState<string | null>(null);
+
+try {
+  const anime = await searchAnime(query);
+  setError(null);
+} catch (err) {
+  setError('Failed to search anime. Please try again.');
+}
+
+{error && <div className="error">{error}</div>}
+```
+</CodeGroup>
+
+## Testing the API
+
+Test your API integration:
+
+<Steps>
+  <Step title="Test search endpoint">
+    ```bash
+    curl "https://api.jikan.moe/v4/anime?q=naruto&limit=5"
+    ```
+  </Step>
+
+  <Step title="Test in your app">
+    Navigate to `/search` in your app and search for "Naruto"
+  </Step>
+
+  <Step title="Check rate limiting">
+    Make multiple rapid requests and verify they're queued properly
+  </Step>
+
+  <Step title="Test caching">
+    Search for the same anime twice and check console for cache hit
+  </Step>
+</Steps>
+
+## Alternative Anime APIs
+
+If you want to use a different data source:
+
+<Accordion title="AniList API">
+  **GraphQL API with more detailed data**
+  
+  - Pros: GraphQL, detailed character info, user data
+  - Cons: More complex queries, requires different client
+  - Website: [anilist.co/graphiql](https://anilist.co/graphiql)
+</Accordion>
+
+<Accordion title="Kitsu API">
+  **REST API with social features**
+  
+  - Pros: User profiles, follows, social features
+  - Cons: Smaller database than MAL
+  - Website: [kitsu.docs.apiary.io](https://kitsu.docs.apiary.io)
+</Accordion>
+
+<Accordion title="TMDB API">
+  **For movies and some anime**
+  
+  - Pros: Great for anime movies, trailers, cast
+  - Cons: Limited anime series coverage
+  - Website: [themoviedb.org/documentation/api](https://www.themoviedb.org/documentation/api)
+</Accordion>
+
+## Best Practices
+
+<Warning>
+  **API Usage Best Practices:**
+  - ✅ Respect rate limits (handled automatically)
+  - ✅ Cache responses when possible
+  - ✅ Handle errors gracefully
+  - ✅ Show loading states to users
+  - ✅ Implement pagination for large result sets
+  - ✅ Don't hammer the API - be a good citizen
+</Warning>
+
+## Troubleshooting
+
+### API returns 429 (Rate Limited)
+
+- The client automatically retries with backoff
+- If persistent, increase `minInterval` in `animeApi.ts`
+- Consider adding more aggressive caching
+
+### Search returns empty results
+
+- Verify the anime exists on MyAnimeList
+- Try different search terms (English vs Japanese)
+- Check API status: [status.jikan.moe](https://status.jikan.moe)
+
+### Images not loading
+
+- MyAnimeList CDN may block some requests
+- Consider proxying images through your own CDN
+- Check CORS headers in browser console
+
+### Slow API responses
+
+- First request may be slower (cache warming)
+- Consider prefetching popular anime
+- Implement skeleton loading states
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Complete Setup" icon="check" href="/setup/supabase">
+    Review all setup steps to ensure everything is configured
+  </Card>
+  <Card title="Development Guide" icon="code" href="/quickstart">
+    Start building features with your configured backend
+  </Card>
+</CardGroup>
+
+## Resources
+
+- [Jikan API Documentation](https://docs.api.jikan.moe/)
+- [Jikan GitHub](https://github.com/jikan-me/jikan)
+- [MyAnimeList](https://myanimelist.net/)
+- [API Status Page](https://status.jikan.moe/)

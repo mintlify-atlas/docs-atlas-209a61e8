@@ -1,0 +1,498 @@
+---
+title: 'Database Migrations'
+description: 'Guide to running and managing database migrations for AniDojo'
+---
+
+## Overview
+
+AniDojo uses Supabase for its database, and migrations are managed through SQL files. This guide covers how to apply migrations to your production database and manage schema changes.
+
+<Note>
+Database migrations must be run before deploying your application to production. The application will not function correctly without the proper database schema.
+</Note>
+
+## Understanding Migrations
+
+Migrations are SQL scripts that create and modify your database schema. AniDojo's migrations are located in:
+
+```
+supabase/migrations/
+└── 001_initial_schema.sql
+```
+
+The initial schema creates:
+
+- **profiles** - User profile data extending Supabase Auth
+- **anime_entries** - User's anime tracking entries
+- **reviews** - User-written anime reviews
+- **review_votes** - Helpful/unhelpful votes on reviews
+- **comments** - Comments on reviews
+- **comment_votes** - Upvotes/downvotes on comments
+- **custom_lists** - User-created anime lists
+- **custom_list_entries** - Anime entries in custom lists
+- **Row Level Security (RLS)** policies for data protection
+- **Indexes** for query performance
+- **Triggers** for automatic profile creation and timestamp updates
+
+## Prerequisites
+
+Before running migrations, ensure you have:
+
+- A Supabase project created at [supabase.com](https://supabase.com)
+- Your project's connection details (URL and keys)
+- Either the Supabase Dashboard access or Supabase CLI installed
+
+## Method 1: Using Supabase Dashboard (Recommended for Beginners)
+
+This method is quick and doesn't require any CLI tools.
+
+<Steps>
+  <Step title="Access SQL Editor">
+    1. Go to your [Supabase Dashboard](https://supabase.com/dashboard)
+    2. Select your project
+    3. Navigate to **SQL Editor** in the left sidebar
+  </Step>
+
+  <Step title="Open Migration File">
+    Open the migration file from your project:
+    
+    ```bash
+    supabase/migrations/001_initial_schema.sql
+    ```
+
+    This file contains 375 lines of SQL that creates your entire database schema.
+  </Step>
+
+  <Step title="Copy SQL Content">
+    Copy the entire contents of `001_initial_schema.sql`
+
+    The file includes:
+    - Table definitions
+    - Indexes for performance
+    - RLS policies for security
+    - Triggers for automation
+    - Helper functions
+  </Step>
+
+  <Step title="Run Migration">
+    1. Paste the SQL into the SQL Editor
+    2. Click **Run** (or press Ctrl/Cmd + Enter)
+    3. Wait for execution to complete (typically 2-5 seconds)
+    4. Verify you see "Success. No rows returned" message
+  </Step>
+
+  <Step title="Verify Tables Created">
+    Verify the migration succeeded:
+
+    1. Navigate to **Table Editor** in the left sidebar
+    2. You should see all 8 tables:
+       - profiles
+       - anime_entries
+       - reviews
+       - review_votes
+       - comments
+       - comment_votes
+       - custom_lists
+       - custom_list_entries
+
+    <Note>
+    If you don't see all tables, check the SQL Editor for error messages and ensure the entire script was pasted.
+    </Note>
+  </Step>
+</Steps>
+
+## Method 2: Using Supabase CLI (Recommended for Production)
+
+The CLI method is preferred for production environments and team workflows.
+
+<Steps>
+  <Step title="Install Supabase CLI">
+    Install the Supabase CLI globally:
+
+    <CodeGroup>
+    ```bash npm
+    npm install -g supabase
+    ```
+
+    ```bash yarn
+    yarn global add supabase
+    ```
+
+    ```bash pnpm
+    pnpm add -g supabase
+    ```
+
+    ```bash Homebrew (macOS)
+    brew install supabase/tap/supabase
+    ```
+    </CodeGroup>
+
+    Verify installation:
+    ```bash
+    supabase --version
+    ```
+  </Step>
+
+  <Step title="Get Project Reference ID">
+    1. Go to your [Supabase Dashboard](https://supabase.com/dashboard)
+    2. Select your project
+    3. Go to **Settings → General**
+    4. Copy your **Reference ID** (looks like: `abcdefghijklmnop`)
+  </Step>
+
+  <Step title="Link Project">
+    Link your local project to your Supabase project:
+
+    ```bash
+    supabase link --project-ref your-project-ref
+    ```
+
+    You'll be prompted to enter your database password. This is the password you set when creating your Supabase project.
+
+    <Warning>
+    This command creates a `.supabase` directory in your project. Add it to `.gitignore` to avoid committing credentials.
+    </Warning>
+  </Step>
+
+  <Step title="Push Migrations">
+    Apply all migrations to your remote database:
+
+    ```bash
+    supabase db push
+    ```
+
+    This command:
+    1. Reads all files in `supabase/migrations/`
+    2. Applies them to your remote database in order
+    3. Tracks which migrations have been applied
+    4. Shows success/error messages
+
+    Expected output:
+    ```bash
+    Applying migration 001_initial_schema.sql...
+    Finished supabase db push.
+    ```
+  </Step>
+
+  <Step title="Verify Migration">
+    Check that migrations were applied successfully:
+
+    ```bash
+    supabase db diff
+    ```
+
+    If no differences are shown, your database schema matches your migration files.
+  </Step>
+</Steps>
+
+## Post-Migration Setup
+
+After running migrations, set up additional Supabase features:
+
+### Storage Buckets
+
+Create storage buckets for file uploads:
+
+<Steps>
+  <Step title="Navigate to Storage">
+    1. Go to your Supabase Dashboard
+    2. Click **Storage** in the left sidebar
+    3. Click **Create a new bucket**
+  </Step>
+
+  <Step title="Create Avatars Bucket">
+    Create a bucket for user avatars:
+
+    - **Name:** `avatars`
+    - **Public:** ✅ Yes
+    - **File size limit:** 5 MB
+    - **Allowed MIME types:** `image/jpeg`, `image/png`, `image/webp`, `image/gif`
+  </Step>
+
+  <Step title="Create Review Images Bucket (Optional)">
+    Create a bucket for review attachments:
+
+    - **Name:** `review-images`
+    - **Public:** ✅ Yes
+    - **File size limit:** 10 MB
+    - **Allowed MIME types:** `image/jpeg`, `image/png`, `image/webp`
+  </Step>
+
+  <Step title="Create Anime Images Bucket (Optional)">
+    Create a bucket for custom anime images:
+
+    - **Name:** `anime-images`
+    - **Public:** ✅ Yes
+    - **File size limit:** 10 MB
+    - **Allowed MIME types:** `image/jpeg`, `image/png`, `image/webp`
+  </Step>
+</Steps>
+
+### Storage Policies
+
+Set up Row Level Security policies for storage buckets:
+
+<Accordion title="Avatar Storage Policies">
+  Run these SQL commands in the SQL Editor:
+
+  ```sql
+  -- Allow public read access
+  CREATE POLICY "Avatar images are publicly accessible"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'avatars');
+
+  -- Allow authenticated users to upload their own avatars
+  CREATE POLICY "Users can upload their own avatar"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'avatars' AND
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+  -- Allow users to update their own avatars
+  CREATE POLICY "Users can update their own avatar"
+  ON storage.objects FOR UPDATE
+  USING (
+    bucket_id = 'avatars' AND
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+  -- Allow users to delete their own avatars
+  CREATE POLICY "Users can delete their own avatar"
+  ON storage.objects FOR DELETE
+  USING (
+    bucket_id = 'avatars' AND
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
+  ```
+</Accordion>
+
+<Accordion title="Review Images Storage Policies">
+  ```sql
+  -- Allow public read access
+  CREATE POLICY "Review images are publicly accessible"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'review-images');
+
+  -- Allow authenticated users to upload review images
+  CREATE POLICY "Authenticated users can upload review images"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'review-images' AND
+    auth.role() = 'authenticated'
+  );
+  ```
+</Accordion>
+
+<Accordion title="Anime Images Storage Policies">
+  ```sql
+  -- Allow public read access
+  CREATE POLICY "Anime images are publicly accessible"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'anime-images');
+
+  -- Allow authenticated users to upload anime images
+  CREATE POLICY "Authenticated users can upload anime images"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'anime-images' AND
+    auth.role() = 'authenticated'
+  );
+  ```
+</Accordion>
+
+## Verifying Your Setup
+
+After running migrations and setting up storage, verify everything works:
+
+<Steps>
+  <Step title="Test Authentication">
+    1. Deploy your application (or run locally)
+    2. Navigate to the signup page
+    3. Create a test account
+    4. Verify the user appears in **Supabase Dashboard → Authentication → Users**
+    5. Check that a profile was automatically created in **Table Editor → profiles**
+  </Step>
+
+  <Step title="Test Database Operations">
+    1. Sign in to your test account
+    2. Add an anime to your list
+    3. Verify it appears in **Table Editor → anime_entries**
+    4. Try updating and deleting the entry
+  </Step>
+
+  <Step title="Test Storage">
+    1. Upload a profile avatar
+    2. Verify the image appears in **Storage → avatars**
+    3. Check that the image displays correctly in your app
+  </Step>
+</Steps>
+
+## Managing Future Migrations
+
+As your application evolves, you'll need to add more migrations:
+
+### Creating New Migrations
+
+<Steps>
+  <Step title="Create Migration File">
+    Create a new migration file with a sequential number:
+
+    ```bash
+    supabase/migrations/002_add_favorites_feature.sql
+    ```
+
+    <Note>
+    Use descriptive names that explain what the migration does. Include a number prefix to maintain order.
+    </Note>
+  </Step>
+
+  <Step title="Write Migration SQL">
+    Add your schema changes:
+
+    ```sql 002_add_favorites_feature.sql
+    -- Add new column to anime_entries
+    ALTER TABLE public.anime_entries
+    ADD COLUMN IF NOT EXISTS is_favorite BOOLEAN DEFAULT false;
+
+    -- Create index for favorites queries
+    CREATE INDEX IF NOT EXISTS idx_anime_entries_favorite
+    ON public.anime_entries(user_id, is_favorite)
+    WHERE is_favorite = true;
+    ```
+  </Step>
+
+  <Step title="Apply Migration">
+    Using CLI:
+    ```bash
+    supabase db push
+    ```
+
+    Or manually run the SQL in the Dashboard SQL Editor.
+  </Step>
+</Steps>
+
+### Best Practices
+
+<AccordionGroup>
+  <Accordion title="Always use IF NOT EXISTS/IF EXISTS">
+    Make migrations idempotent so they can be run multiple times safely:
+
+    ```sql
+    -- ✅ Good: Won't fail if table already exists
+    CREATE TABLE IF NOT EXISTS my_table (...);
+
+    -- ❌ Bad: Will fail on second run
+    CREATE TABLE my_table (...);
+    ```
+  </Accordion>
+
+  <Accordion title="Include rollback instructions">
+    Document how to undo migrations:
+
+    ```sql
+    -- Migration: Add favorites feature
+    ALTER TABLE anime_entries ADD COLUMN is_favorite BOOLEAN;
+
+    -- Rollback (if needed):
+    -- ALTER TABLE anime_entries DROP COLUMN is_favorite;
+    ```
+  </Accordion>
+
+  <Accordion title="Test migrations on a staging database first">
+    1. Create a separate Supabase project for staging
+    2. Apply migrations there first
+    3. Test thoroughly
+    4. Only then apply to production
+  </Accordion>
+
+  <Accordion title="Never modify existing migrations">
+    Once a migration has been applied to production:
+    - Never edit the migration file
+    - Create a new migration to make changes
+    - This maintains a clear history of schema changes
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+### "relation already exists" Error
+
+**Cause:** Migration has already been run or table was created manually
+
+**Solution:**
+- Add `IF NOT EXISTS` to CREATE statements
+- Or drop existing tables before running (⚠️ data loss!)
+- Or skip to the next migration
+
+### "permission denied" Error
+
+**Cause:** Insufficient database permissions
+
+**Solution:**
+- Ensure you're using the correct database password
+- Verify your Supabase project is active (not paused)
+- Check that you have owner/admin access to the project
+
+### RLS Policy Errors
+
+**Cause:** Conflict with existing policies or incorrect syntax
+
+**Solution:**
+1. Check for duplicate policy names
+2. Drop existing policies first:
+   ```sql
+   DROP POLICY IF EXISTS "policy_name" ON table_name;
+   ```
+3. Then recreate them
+
+### Storage Bucket Issues
+
+**"Bucket already exists" error:**
+- Check Storage dashboard for existing buckets
+- Use a different bucket name
+- Or delete the existing bucket (⚠️ deletes all files!)
+
+**Files won't upload:**
+- Verify storage policies are set up correctly
+- Check file size limits
+- Ensure MIME types are allowed
+- Verify user is authenticated
+
+## Advanced: Local Development with Supabase
+
+For advanced workflows, you can run Supabase locally:
+
+```bash
+# Start local Supabase (requires Docker)
+supabase start
+
+# Apply migrations locally
+supabase db reset
+
+# Create a new migration
+supabase migration new add_feature
+
+# Generate types from your database
+supabase gen types typescript --local > types/database.ts
+```
+
+See [Supabase Local Development](https://supabase.com/docs/guides/cli/local-development) for details.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Deploy to Vercel" icon="rocket" href="/deployment/vercel">
+    Deploy your application with the configured database
+  </Card>
+  <Card title="Environment Variables" icon="key" href="/deployment/environment-variables">
+    Configure connection to your database
+  </Card>
+</CardGroup>
+
+## Additional Resources
+
+- [Supabase Database Documentation](https://supabase.com/docs/guides/database)
+- [Row Level Security Guide](https://supabase.com/docs/guides/auth/row-level-security)
+- [Supabase CLI Reference](https://supabase.com/docs/reference/cli)
+- [PostgreSQL Documentation](https://www.postgresql.org/docs/)

@@ -1,0 +1,207 @@
+---
+title: 'Contribution Guidelines'
+description: 'Learn how to contribute to AniDojo and become part of our open-source community'
+---
+
+## Welcome Contributors
+
+Thank you for your interest in contributing to AniDojo! This guide will help you get started with contributing to our anime tracking and discovery platform.
+
+## Getting Started
+
+<Steps>
+  <Step title="Fork the Repository">
+    Fork the AniDojo repository to your GitHub account and clone it locally:
+    
+    ```bash
+    git clone https://github.com/your-username/anidojo.git
+    cd anidojo
+    ```
+  </Step>
+  
+  <Step title="Install Dependencies">
+    Install project dependencies using your preferred package manager:
+    
+    ```bash
+    npm install
+    ```
+    
+    <Note>
+      AniDojo requires Node.js 18 or higher. Make sure you have the correct version installed.
+    </Note>
+  </Step>
+  
+  <Step title="Create a Branch">
+    Create a new branch for your feature or bug fix:
+    
+    ```bash
+    git checkout -b feature/your-feature-name
+    ```
+    
+    Use descriptive branch names:
+    - `feature/` for new features
+    - `fix/` for bug fixes
+    - `docs/` for documentation updates
+    - `refactor/` for code refactoring
+  </Step>
+  
+  <Step title="Start Development Server">
+    Run the development server with Turbopack:
+    
+    ```bash
+    npm run dev
+    ```
+    
+    The application will be available at [http://localhost:3000](http://localhost:3000)
+  </Step>
+</Steps>
+
+## Development Workflow
+
+### Making Changes
+
+1. Make your changes following our [code style guidelines](/contributing/code-style)
+2. Test your changes thoroughly in the browser
+3. Run the linter to check for code quality issues:
+
+```bash
+npm run lint
+```
+
+<Tip>
+  Fix any linting errors before committing. Most issues can be auto-fixed by your IDE with ESLint integration.
+</Tip>
+
+### Committing Changes
+
+Write clear, descriptive commit messages that explain what and why:
+
+```bash
+git add .
+git commit -m "feat: add anime search functionality"
+```
+
+**Commit Message Format:**
+- `feat:` - New feature
+- `fix:` - Bug fix
+- `docs:` - Documentation changes
+- `style:` - Code style changes (formatting, etc.)
+- `refactor:` - Code refactoring
+- `test:` - Adding or updating tests
+- `chore:` - Maintenance tasks
+
+## Pull Request Process
+
+<Steps>
+  <Step title="Push Your Changes">
+    Push your branch to your fork:
+    
+    ```bash
+    git push origin feature/your-feature-name
+    ```
+  </Step>
+  
+  <Step title="Create Pull Request">
+    Open a pull request from your fork to the main AniDojo repository:
+    
+    - Provide a clear title and description
+    - Reference any related issues
+    - Include screenshots for UI changes
+    - List any breaking changes
+  </Step>
+  
+  <Step title="Code Review">
+    Wait for maintainers to review your PR:
+    
+    - Address any feedback or requested changes
+    - Keep your branch up to date with the main branch
+    - Be responsive to comments and questions
+  </Step>
+  
+  <Step title="Merge">
+    Once approved, a maintainer will merge your PR:
+    
+    - Your contribution will be part of the next release
+    - You'll be added to our contributors list
+  </Step>
+</Steps>
+
+## Types of Contributions
+
+### Bug Reports
+
+Found a bug? Help us improve by reporting it:
+
+- Use the GitHub issue tracker
+- Provide a clear description and steps to reproduce
+- Include browser version and environment details
+- Add screenshots if applicable
+
+### Feature Requests
+
+Have an idea for a new feature?
+
+- Check if it's already been suggested
+- Describe the feature and its benefits
+- Explain the use case
+- Be open to discussion and feedback
+
+### Code Contributions
+
+We welcome code contributions in these areas:
+
+- **New Features** - Implement requested features
+- **Bug Fixes** - Fix reported issues
+- **UI/UX Improvements** - Enhance the user interface
+- **Performance** - Optimize code and assets
+- **Documentation** - Improve guides and API docs
+- **Tests** - Add test coverage
+
+### Documentation
+
+Help improve our documentation:
+
+- Fix typos and errors
+- Add examples and tutorials
+- Clarify confusing sections
+- Translate documentation
+
+## Project Structure
+
+Understand the codebase structure:
+
+```
+src/
+├── app/           # Next.js App Router pages
+├── components/    # React components
+├── contexts/      # React contexts
+├── hooks/         # Custom React hooks
+├── lib/           # Utility functions and data
+├── types/         # TypeScript type definitions
+└── proxy.ts       # API proxy configuration
+```
+
+## Code of Conduct
+
+We are committed to providing a welcoming and inclusive community:
+
+- Be respectful and considerate
+- Welcome newcomers and help them learn
+- Focus on constructive feedback
+- Respect differing opinions and experiences
+- Report unacceptable behavior to maintainers
+
+## Questions?
+
+Need help? Here's how to get support:
+
+- Check existing [documentation](/introduction)
+- Search [existing issues](https://github.com/your-org/anidojo/issues)
+- Open a new discussion or issue
+- Reach out to maintainers
+
+<Note>
+  Before starting major work, open an issue to discuss your approach with maintainers. This helps ensure your contribution aligns with project goals.
+</Note>
+
+Thank you for contributing to AniDojo! Your efforts help make anime tracking better for everyone.

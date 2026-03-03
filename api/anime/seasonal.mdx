@@ -1,0 +1,636 @@
+---
+title: 'Seasonal Anime Functions'
+description: 'Get anime by season/year or fetch currently airing seasonal anime'
+---
+
+## Overview
+
+AniDojo provides two functions for fetching seasonal anime data:
+
+- **`getSeasonalAnime()`** - Get anime from a specific season and year
+- **`getCurrentSeasonAnime()`** - Get anime from the current season
+
+Both functions return paginated results from the MyAnimeList database.
+
+## getSeasonalAnime()
+
+Retrieve anime that aired during a specific season and year.
+
+### Function Signature
+
+```typescript
+getSeasonalAnime(
+  year: number,
+  season: 'winter' | 'spring' | 'summer' | 'fall',
+  limit?: number
+): Promise<JikanSearchResponse>
+```
+
+### Parameters
+
+<ParamField path="year" type="number" required>
+  The year to fetch anime from.
+  
+  - **Format**: Four-digit year (e.g., 2024, 2023)
+  - **Range**: 1917 to current year + 1
+  - **Example**: `2024`, `2023`, `2022`
+</ParamField>
+
+<ParamField path="season" type="'winter' | 'spring' | 'summer' | 'fall'" required>
+  The season to fetch anime from.
+  
+  - **`winter`** - January, February, March
+  - **`spring`** - April, May, June  
+  - **`summer`** - July, August, September
+  - **`fall`** - October, November, December
+  
+  <Note>Season names must be lowercase</Note>
+</ParamField>
+
+<ParamField path="limit" type="number" optional>
+  Maximum number of results to return.
+  
+  - **Range**: 1-25
+  - **Default**: All results (no limit)
+  - Useful for previews or reduced bandwidth
+</ParamField>
+
+### Return Value
+
+Returns a `JikanSearchResponse` with seasonal anime data.
+
+<ResponseField name="data" type="JikanAnime[]" required>
+  Array of anime that aired during the specified season.
+  
+  Results include:
+  - All anime with `season` matching the parameter
+  - Sorted by popularity/score
+  - Complete metadata (see [JikanAnime interface](/api/anime/overview#jikananime-interface))
+</ResponseField>
+
+<ResponseField name="pagination" type="object" required>
+  Pagination information (typically single page for seasonal queries)
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+```typescript Basic Usage
+import { getSeasonalAnime } from '@/lib/animeApi';
+
+// Get Winter 2024 anime
+const winter2024 = await getSeasonalAnime(2024, 'winter');
+
+console.log(`${winter2024.data.length} anime aired in Winter 2024`);
+
+winter2024.data.forEach(anime => {
+  console.log(`- ${anime.title}`);
+  console.log(`  Score: ${anime.score}/10`);
+  console.log(`  Episodes: ${anime.episodes}`);
+});
+```
+
+```typescript With Limit
+// Get top 10 anime from Summer 2023
+const summer2023 = await getSeasonalAnime(2023, 'summer', 10);
+
+console.log('Top 10 Summer 2023 anime:');
+summer2023.data.forEach((anime, i) => {
+  console.log(`${i + 1}. ${anime.title} (${anime.score}/10)`);
+});
+```
+
+```typescript All Seasons
+// Fetch all seasons of 2023
+const seasons = ['winter', 'spring', 'summer', 'fall'] as const;
+
+for (const season of seasons) {
+  const results = await getSeasonalAnime(2023, season, 5);
+  console.log(`\n${season.toUpperCase()} 2023 (Top 5):`);
+  results.data.forEach(anime => {
+    console.log(`  ${anime.title}`);
+  });
+}
+```
+</CodeGroup>
+
+### Advanced Usage
+
+<CodeGroup>
+```typescript Compare Seasons
+import { getSeasonalAnime, type JikanAnime } from '@/lib/animeApi';
+
+async function compareSeasons(year: number) {
+  const [winter, spring, summer, fall] = await Promise.all([
+    getSeasonalAnime(year, 'winter'),
+    getSeasonalAnime(year, 'spring'),
+    getSeasonalAnime(year, 'summer'),
+    getSeasonalAnime(year, 'fall')
+  ]);
+  
+  return {
+    winter: {
+      count: winter.data.length,
+      avgScore: average(winter.data.map(a => a.score))
+    },
+    spring: {
+      count: spring.data.length,
+      avgScore: average(spring.data.map(a => a.score))
+    },
+    summer: {
+      count: summer.data.length,
+      avgScore: average(summer.data.map(a => a.score))
+    },
+    fall: {
+      count: fall.data.length,
+      avgScore: average(fall.data.map(a => a.score))
+    }
+  };
+}
+
+function average(numbers: number[]) {
+  return numbers.reduce((a, b) => a + b, 0) / numbers.length;
+}
+
+const stats = await compareSeasons(2023);
+console.log('2023 Anime by Season:', stats);
+```
+
+```typescript Filter by Genre
+async function getSeasonalByGenre(
+  year: number,
+  season: 'winter' | 'spring' | 'summer' | 'fall',
+  genreName: string
+) {
+  const results = await getSeasonalAnime(year, season);
+  
+  return results.data.filter(anime =>
+    anime.genres.some(g => g.name === genreName)
+  );
+}
+
+// Get all Action anime from Fall 2023
+const actionAnime = await getSeasonalByGenre(2023, 'fall', 'Action');
+console.log(`${actionAnime.length} Action anime in Fall 2023`);
+```
+
+```typescript Year Overview
+async function getYearOverview(year: number) {
+  const allSeasons = await Promise.all([
+    getSeasonalAnime(year, 'winter'),
+    getSeasonalAnime(year, 'spring'),
+    getSeasonalAnime(year, 'summer'),
+    getSeasonalAnime(year, 'fall')
+  ]);
+  
+  const allAnime = allSeasons.flatMap(season => season.data);
+  
+  // Remove duplicates (some anime span multiple seasons)
+  const unique = Array.from(
+    new Map(allAnime.map(a => [a.mal_id, a])).values()
+  );
+  
+  return {
+    total: unique.length,
+    byType: countByType(unique),
+    topRated: unique
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10)
+  };
+}
+
+function countByType(anime: JikanAnime[]) {
+  const counts: Record<string, number> = {};
+  anime.forEach(a => {
+    counts[a.type] = (counts[a.type] || 0) + 1;
+  });
+  return counts;
+}
+
+const overview = await getYearOverview(2023);
+console.log(`${overview.total} unique anime in 2023`);
+console.log('By type:', overview.byType);
+```
+</CodeGroup>
+
+---
+
+## getCurrentSeasonAnime()
+
+Retrieve anime currently airing in the present season.
+
+### Function Signature
+
+```typescript
+getCurrentSeasonAnime(limit?: number): Promise<JikanSearchResponse>
+```
+
+### Parameters
+
+<ParamField path="limit" type="number" optional>
+  Maximum number of results to return.
+  
+  - **Range**: 1-25
+  - **Default**: All results
+  - Use smaller limits for homepage previews
+</ParamField>
+
+### Return Value
+
+<ResponseField name="data" type="JikanAnime[]" required>
+  Array of anime currently airing in the present season.
+  
+  Automatically determines:
+  - Current year
+  - Current season (winter/spring/summer/fall)
+  - Returns anime airing now
+</ResponseField>
+
+<ResponseField name="pagination" type="object" required>
+  Pagination metadata
+</ResponseField>
+
+### Examples
+
+<CodeGroup>
+```typescript Basic Usage
+import { getCurrentSeasonAnime } from '@/lib/animeApi';
+
+const current = await getCurrentSeasonAnime();
+
+console.log(`${current.data.length} anime airing this season`);
+
+current.data.forEach(anime => {
+  console.log(`${anime.title}`);
+  console.log(`  Episodes: ${anime.episodes || 'Ongoing'}`);
+  console.log(`  Airing: ${anime.airing ? 'Yes' : 'No'}`);
+});
+```
+
+```typescript Limited Results
+// Get top 10 currently airing
+const top10 = await getCurrentSeasonAnime(10);
+
+console.log('Top 10 Airing Now:');
+top10.data.forEach((anime, i) => {
+  console.log(`${i + 1}. ${anime.title} - ${anime.score}/10`);
+});
+```
+
+```typescript Homepage Widget
+async function getHomepageAnime() {
+  const current = await getCurrentSeasonAnime(6);
+  
+  return current.data.map(anime => ({
+    id: anime.mal_id,
+    title: anime.title,
+    image: anime.images.jpg.large_image_url,
+    score: anime.score,
+    synopsis: anime.synopsis.slice(0, 150) + '...'
+  }));
+}
+
+const featured = await getHomepageAnime();
+// Display on homepage
+```
+</CodeGroup>
+
+### Advanced Usage
+
+<CodeGroup>
+```typescript Airing Status Check
+const current = await getCurrentSeasonAnime();
+
+const airing = current.data.filter(a => a.airing);
+const completed = current.data.filter(a => !a.airing);
+
+console.log(`Currently airing: ${airing.length}`);
+console.log(`Completed this season: ${completed.length}`);
+
+// Show next episode times
+airing.forEach(anime => {
+  if (anime.broadcast) {
+    console.log(`${anime.title} airs ${anime.broadcast.string}`);
+  }
+});
+```
+
+```typescript Weekly Schedule
+async function getWeeklySchedule() {
+  const current = await getCurrentSeasonAnime();
+  
+  const schedule: Record<string, JikanAnime[]> = {
+    Monday: [],
+    Tuesday: [],
+    Wednesday: [],
+    Thursday: [],
+    Friday: [],
+    Saturday: [],
+    Sunday: []
+  };
+  
+  current.data.forEach(anime => {
+    if (anime.broadcast?.day) {
+      const day = anime.broadcast.day;
+      if (schedule[day]) {
+        schedule[day].push(anime);
+      }
+    }
+  });
+  
+  return schedule;
+}
+
+const schedule = await getWeeklySchedule();
+Object.entries(schedule).forEach(([day, anime]) => {
+  console.log(`\n${day}: ${anime.length} shows`);
+  anime.forEach(a => console.log(`  - ${a.title}`));
+});
+```
+
+```typescript Trending Analysis
+interface TrendingAnime {
+  title: string;
+  score: number;
+  members: number;
+  trendScore: number;
+}
+
+async function getTrendingAnime(): Promise<TrendingAnime[]> {
+  const current = await getCurrentSeasonAnime();
+  
+  // Calculate trend score (score * log(members))
+  const trending = current.data
+    .filter(a => a.airing)
+    .map(anime => ({
+      title: anime.title,
+      score: anime.score,
+      members: anime.members,
+      trendScore: anime.score * Math.log10(anime.members)
+    }))
+    .sort((a, b) => b.trendScore - a.trendScore)
+    .slice(0, 10);
+  
+  return trending;
+}
+
+const trending = await getTrendingAnime();
+console.log('Trending This Season:');
+trending.forEach((anime, i) => {
+  console.log(`${i + 1}. ${anime.title}`);
+  console.log(`   Score: ${anime.score}, Members: ${anime.members.toLocaleString()}`);
+});
+```
+</CodeGroup>
+
+## React Hook Usage
+
+Use the `useSeasonalAnime` hook for React components:
+
+<CodeGroup>
+```tsx Seasonal Component
+import { useSeasonalAnime } from '@/hooks/useAnime';
+
+function SeasonalAnime() {
+  const { data, loading, error } = useSeasonalAnime(2024, 'winter');
+  
+  if (loading) return <div>Loading winter 2024 anime...</div>;
+  if (error) return <div>Error: {error}</div>;
+  
+  return (
+    <div>
+      <h1>Winter 2024 Anime ({data.length})</h1>
+      <div className="anime-grid">
+        {data.map(anime => (
+          <div key={anime.id} className="anime-card">
+            <img src={anime.coverArt} alt={anime.title} />
+            <h3>{anime.title}</h3>
+            <span className="score">{anime.score}/10</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+```tsx Season Selector
+import { useState } from 'react';
+import { useSeasonalAnime } from '@/hooks/useAnime';
+
+type Season = 'winter' | 'spring' | 'summer' | 'fall';
+
+function SeasonBrowser() {
+  const [year, setYear] = useState(2024);
+  const [season, setSeason] = useState<Season>('winter');
+  
+  const { data, loading } = useSeasonalAnime(year, season);
+  
+  return (
+    <div>
+      <div className="controls">
+        <select value={year} onChange={e => setYear(Number(e.target.value))}>
+          <option value={2024}>2024</option>
+          <option value={2023}>2023</option>
+          <option value={2022}>2022</option>
+        </select>
+        
+        <select value={season} onChange={e => setSeason(e.target.value as Season)}>
+          <option value="winter">Winter</option>
+          <option value="spring">Spring</option>
+          <option value="summer">Summer</option>
+          <option value="fall">Fall</option>
+        </select>
+      </div>
+      
+      {loading ? (
+        <div>Loading...</div>
+      ) : (
+        <div className="results">
+          <h2>{season.charAt(0).toUpperCase() + season.slice(1)} {year}</h2>
+          <p>{data.length} anime</p>
+          {/* Render anime grid */}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+```tsx Current Season Widget
+import { useState, useEffect } from 'react';
+import { getCurrentSeasonAnime } from '@/lib/animeApi';
+import type { JikanAnime } from '@/lib/animeApi';
+
+function CurrentSeasonWidget() {
+  const [anime, setAnime] = useState<JikanAnime[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    getCurrentSeasonAnime(6).then(response => {
+      setAnime(response.data);
+      setLoading(false);
+    });
+  }, []);
+  
+  if (loading) return <div>Loading current season...</div>;
+  
+  return (
+    <section className="current-season">
+      <h2>Airing This Season</h2>
+      <div className="anime-carousel">
+        {anime.map(a => (
+          <div key={a.mal_id} className="card">
+            <img src={a.images.jpg.image_url} alt={a.title} />
+            <h3>{a.title}</h3>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+```
+</CodeGroup>
+
+## Season Mappings
+
+MyAnimeList uses the following season definitions:
+
+<Tabs>
+  <Tab title="Winter">
+    **January - March**
+    
+    ```typescript
+    const winter = await getSeasonalAnime(2024, 'winter');
+    // Returns anime that aired Jan-Mar 2024
+    ```
+    
+    Typically includes:
+    - New year releases
+    - Continuation of fall series
+  </Tab>
+  
+  <Tab title="Spring">
+    **April - June**
+    
+    ```typescript
+    const spring = await getSeasonalAnime(2024, 'spring');
+    // Returns anime that aired Apr-Jun 2024
+    ```
+    
+    Peak season for new releases
+  </Tab>
+  
+  <Tab title="Summer">
+    **July - September**
+    
+    ```typescript
+    const summer = await getSeasonalAnime(2024, 'summer');
+    // Returns anime that aired Jul-Sep 2024
+    ```
+    
+    Often features action-heavy series
+  </Tab>
+  
+  <Tab title="Fall">
+    **October - December**
+    
+    ```typescript
+    const fall = await getSeasonalAnime(2024, 'fall');
+    // Returns anime that aired Oct-Dec 2024
+    ```
+    
+    Second major release season
+  </Tab>
+</Tabs>
+
+## Performance & Caching
+
+### Caching Behavior
+
+Seasonal queries are cached for 5 minutes:
+
+```typescript
+// First call - fetches from API
+const winter1 = await getSeasonalAnime(2024, 'winter');
+
+// Within 5 minutes - returns cached
+const winter2 = await getSeasonalAnime(2024, 'winter');
+
+// Different season - new request
+const spring = await getSeasonalAnime(2024, 'spring');
+```
+
+### Rate Limiting
+
+Automatic rate limiting applies:
+- Max 3 requests per second
+- Queued execution
+- Retry on 429 errors
+
+## Error Handling
+
+<CodeGroup>
+```typescript Invalid Season
+try {
+  // @ts-expect-error - testing invalid season
+  await getSeasonalAnime(2024, 'autumn');
+} catch (error) {
+  // TypeScript prevents this at compile time
+  console.error('Invalid season name');
+}
+```
+
+```typescript Invalid Year
+try {
+  await getSeasonalAnime(1800, 'winter');
+} catch (error) {
+  console.error('Year out of range');
+}
+```
+
+```typescript Network Error
+try {
+  const anime = await getCurrentSeasonAnime();
+} catch (error) {
+  if (error instanceof TypeError) {
+    console.error('Network error - check connection');
+  } else {
+    console.error('API error:', error);
+  }
+}
+```
+</CodeGroup>
+
+## API Endpoints
+
+These functions call the following Jikan endpoints:
+
+**getSeasonalAnime()**
+```
+GET https://api.jikan.moe/v4/seasons/{year}/{season}
+```
+
+**getCurrentSeasonAnime()**
+```
+GET https://api.jikan.moe/v4/seasons/now
+```
+
+Documentation: [Jikan Seasons API](https://docs.api.jikan.moe/#tag/seasons)
+
+## See Also
+
+<CardGroup cols={2}>
+  <Card title="searchAnime()" icon="magnifying-glass" href="/api/anime/search">
+    Search anime by title or keyword
+  </Card>
+  <Card title="getTopAnime()" icon="trophy" href="/api/anime/top-anime">
+    Get highest-rated anime
+  </Card>
+  <Card title="Browse Anime" icon="compass" href="/guides/browsing-anime">
+    User guide for discovering seasonal anime
+  </Card>
+  <Card title="API Overview" icon="book" href="/api/anime/overview">
+    Complete API reference
+  </Card>
+</CardGroup>

@@ -1,0 +1,500 @@
+---
+title: 'Authentication Configuration'
+description: 'Set up user authentication, social providers, and email templates'
+icon: 'lock'
+---
+
+## Overview
+
+AniDojo uses Supabase Auth for user authentication, supporting email/password login, magic links, and social providers. Authentication is integrated with automatic profile creation and session management.
+
+## Email Authentication
+
+Email authentication is enabled by default in Supabase.
+
+### Configure Email Settings
+
+<Steps>
+  <Step title="Navigate to Auth settings">
+    In your Supabase dashboard, go to **Authentication** → **Providers**
+  </Step>
+
+  <Step title="Enable Email provider">
+    Ensure **Email** is enabled (it should be by default)
+    
+    Options:
+    - ✅ **Email confirmation** - Require email verification
+    - ✅ **Secure password** - Enforce password requirements
+    - **Minimum password length**: 8 characters (recommended)
+  </Step>
+
+  <Step title="Configure redirect URLs">
+    Go to **Authentication** → **URL Configuration** and add:
+    
+    - **Site URL**: `http://localhost:3000` (dev) or your production URL
+    - **Redirect URLs**: 
+      - `http://localhost:3000/auth/callback`
+      - `https://yourdomain.com/auth/callback`
+  </Step>
+</Steps>
+
+## Email Templates
+
+Customize the emails sent to users for various auth events.
+
+### Available Templates
+
+Navigate to **Authentication** → **Email Templates** to customize:
+
+<Accordion title="Confirm Signup">
+  Sent when a new user signs up.
+  
+  **Default Subject**: `Confirm your email`
+  
+  **Variables**:
+  - `{{ .ConfirmationURL }}` - Email confirmation link
+  - `{{ .Token }}` - Confirmation token
+  - `{{ .Email }}` - User's email address
+</Accordion>
+
+<Accordion title="Invite User">
+  Sent when inviting a user to join.
+  
+  **Variables**:
+  - `{{ .ConfirmationURL }}` - Invitation acceptance link
+  - `{{ .Email }}` - Invited user's email
+</Accordion>
+
+<Accordion title="Magic Link">
+  Sent for passwordless login.
+  
+  **Variables**:
+  - `{{ .ConfirmationURL }}` - Magic link URL
+  - `{{ .Token }}` - Login token
+</Accordion>
+
+<Accordion title="Reset Password">
+  Sent when user requests password reset.
+  
+  **Variables**:
+  - `{{ .ConfirmationURL }}` - Password reset link
+  - `{{ .Token }}` - Reset token
+</Accordion>
+
+<Accordion title="Change Email">
+  Sent when user changes their email.
+  
+  **Variables**:
+  - `{{ .ConfirmationURL }}` - Email change confirmation link
+  - `{{ .NewEmail }}` - New email address
+  - `{{ .Email }}` - Old email address
+</Accordion>
+
+### Example Custom Template
+
+```html
+<h2>Welcome to AniDojo!</h2>
+
+<p>Thanks for signing up! Click the link below to verify your email address:</p>
+
+<p>
+  <a href="{{ .ConfirmationURL }}">Verify Email</a>
+</p>
+
+<p>Or copy this link: {{ .ConfirmationURL }}</p>
+
+<p>
+  This link will expire in 24 hours.<br>
+  If you didn't create an account, you can safely ignore this email.
+</p>
+
+<p>Happy watching!<br>The AniDojo Team</p>
+```
+
+## Social Authentication (Optional)
+
+Enable login with Google, GitHub, Discord, and more.
+
+### Enable Google OAuth
+
+<Steps>
+  <Step title="Create Google OAuth app">
+    1. Go to [Google Cloud Console](https://console.cloud.google.com)
+    2. Create a new project or select existing
+    3. Enable **Google+ API**
+    4. Go to **Credentials** → **Create Credentials** → **OAuth 2.0 Client ID**
+  </Step>
+
+  <Step title="Configure OAuth consent">
+    - **Application type**: Web application
+    - **Authorized redirect URIs**: 
+      ```
+      https://your-project-ref.supabase.co/auth/v1/callback
+      ```
+    
+    Copy your **Client ID** and **Client Secret**
+  </Step>
+
+  <Step title="Add to Supabase">
+    In Supabase dashboard:
+    1. Go to **Authentication** → **Providers**
+    2. Enable **Google**
+    3. Paste **Client ID** and **Client Secret**
+    4. Save
+  </Step>
+</Steps>
+
+### Enable GitHub OAuth
+
+<Steps>
+  <Step title="Create GitHub OAuth app">
+    1. Go to [GitHub Developer Settings](https://github.com/settings/developers)
+    2. Click **New OAuth App**
+    3. Fill in:
+       - **Application name**: AniDojo
+       - **Homepage URL**: Your app URL
+       - **Authorization callback URL**: 
+         ```
+         https://your-project-ref.supabase.co/auth/v1/callback
+         ```
+  </Step>
+
+  <Step title="Get credentials">
+    Copy your **Client ID** and generate a **Client Secret**
+  </Step>
+
+  <Step title="Add to Supabase">
+    1. Go to **Authentication** → **Providers**
+    2. Enable **GitHub**
+    3. Paste credentials
+    4. Save
+  </Step>
+</Steps>
+
+### Other Providers
+
+Supabase supports many OAuth providers:
+
+- **Discord** - Popular with anime communities
+- **Twitter** - Social login
+- **Microsoft** - Enterprise SSO
+- **Facebook** - Social login
+- **Apple** - iOS apps
+
+Each follows a similar setup process. See [Supabase Auth Providers](https://supabase.com/docs/guides/auth/social-login) for specific instructions.
+
+## Authentication in Your App
+
+AniDojo provides authentication through the `AuthContext` and Supabase clients.
+
+### Using AuthContext (Client Components)
+
+```tsx
+'use client';
+
+import { useAuth } from '@/contexts/AuthContext';
+
+export default function MyComponent() {
+  const { user, isAuthenticated, signIn, signUp, signOut, loading } = useAuth();
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+  
+  if (!isAuthenticated) {
+    return (
+      <button onClick={() => signIn('user@example.com', 'password')}>
+        Sign In
+      </button>
+    );
+  }
+
+  return (
+    <div>
+      <p>Welcome, {user?.username}!</p>
+      <button onClick={signOut}>Sign Out</button>
+    </div>
+  );
+}
+```
+
+### Sign Up with Email
+
+```typescript
+import { createClient } from '@/lib/supabase/client';
+
+async function signUp(email: string, password: string, username: string) {
+  const supabase = createClient();
+  
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        username, // Stored in user metadata
+      },
+    },
+  });
+  
+  if (error) throw error;
+  return data;
+}
+```
+
+### Sign In with Email
+
+```typescript
+import { createClient } from '@/lib/supabase/client';
+
+async function signIn(email: string, password: string) {
+  const supabase = createClient();
+  
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+  
+  if (error) throw error;
+  return data;
+}
+```
+
+### Sign In with OAuth
+
+```typescript
+import { createClient } from '@/lib/supabase/client';
+
+async function signInWithGoogle() {
+  const supabase = createClient();
+  
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback`,
+    },
+  });
+  
+  if (error) throw error;
+}
+```
+
+### Sign Out
+
+```typescript
+import { createClient } from '@/lib/supabase/client';
+
+async function signOut() {
+  const supabase = createClient();
+  const { error } = await supabase.auth.signOut();
+  
+  if (error) throw error;
+}
+```
+
+### Get Current User (Server-Side)
+
+```typescript
+import { createClient } from '@/lib/supabase/server';
+
+export default async function ServerComponent() {
+  const supabase = await createClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+
+  if (!user) {
+    return <div>Not authenticated</div>;
+  }
+
+  return <div>Hello, {user.email}</div>;
+}
+```
+
+## Automatic Profile Creation
+
+When a user signs up, a profile is automatically created via database trigger:
+
+```sql
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, username)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1))
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+```
+
+This trigger:
+1. Fires when a new user is created in `auth.users`
+2. Extracts username from metadata or uses email prefix
+3. Creates a matching profile in `public.profiles`
+
+## Session Management
+
+Supabase handles session management automatically:
+
+- **Session tokens** stored in cookies
+- **Automatic refresh** before expiration
+- **Secure httpOnly** cookies (server-side)
+- **PKCE flow** for OAuth
+
+### Session Configuration
+
+Configure session settings in **Authentication** → **Settings**:
+
+- **JWT expiry**: 3600 seconds (1 hour) default
+- **Refresh token rotation**: Enabled for security
+- **Session timeout**: Configure inactivity timeout
+
+## Password Reset Flow
+
+```typescript
+import { createClient } from '@/lib/supabase/client';
+
+// Request password reset
+async function requestPasswordReset(email: string) {
+  const supabase = createClient();
+  
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/auth/reset-password`,
+  });
+  
+  if (error) throw error;
+}
+
+// Update password (called after clicking reset link)
+async function updatePassword(newPassword: string) {
+  const supabase = createClient();
+  
+  const { error } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+  
+  if (error) throw error;
+}
+```
+
+## Protected Routes
+
+Protect routes that require authentication:
+
+```typescript middleware.ts
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+export async function middleware(req: NextRequest) {
+  const res = NextResponse.next();
+  const supabase = createMiddlewareClient({ req, res });
+  
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  
+  // Protect routes under /dashboard
+  if (req.nextUrl.pathname.startsWith('/dashboard') && !session) {
+    return NextResponse.redirect(new URL('/login', req.url));
+  }
+  
+  return res;
+}
+
+export const config = {
+  matcher: ['/dashboard/:path*', '/profile/:path*'],
+};
+```
+
+## Testing Authentication
+
+<Steps>
+  <Step title="Test email signup">
+    1. Navigate to `/signup` in your app
+    2. Create a new account
+    3. Check your email for confirmation link
+    4. Verify profile was created in database
+  </Step>
+
+  <Step title="Test email signin">
+    1. Navigate to `/login`
+    2. Sign in with your credentials
+    3. Verify you're redirected to dashboard
+  </Step>
+
+  <Step title="Test OAuth (if enabled)">
+    1. Click "Sign in with Google" button
+    2. Complete OAuth flow
+    3. Verify profile created
+  </Step>
+
+  <Step title="Test password reset">
+    1. Navigate to "Forgot password"
+    2. Enter your email
+    3. Check email for reset link
+    4. Update password and sign in
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+### Email not received
+
+- Check Supabase logs: **Authentication** → **Logs**
+- Verify email provider is configured correctly
+- Check spam folder
+- For development, check Supabase **Authentication** → **Users** for confirmation link
+
+### OAuth redirect error
+
+- Verify redirect URL in OAuth provider matches Supabase callback URL
+- Check redirect URL is added in **Authentication** → **URL Configuration**
+- Ensure OAuth app is approved/published (not in testing mode)
+
+### Profile not created
+
+- Check database trigger exists: `on_auth_user_created`
+- View trigger logs in **Database** → **Logs**
+- Manually verify trigger function: `handle_new_user()`
+- Check for errors in Supabase logs
+
+### Session expires immediately
+
+- Check JWT expiry setting isn't too short
+- Verify cookies are being set (check browser dev tools)
+- Ensure middleware is refreshing session correctly
+
+## Security Best Practices
+
+<Warning>
+  **Security Checklist:**
+  - ✅ Enable email confirmation
+  - ✅ Enforce strong passwords (8+ characters)
+  - ✅ Use HTTPS in production
+  - ✅ Set appropriate redirect URLs
+  - ✅ Enable MFA for admin accounts
+  - ✅ Rate limit auth endpoints
+  - ✅ Monitor auth logs for suspicious activity
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="API Integration" icon="link" href="/setup/api-integration">
+    Connect to the Jikan anime API for anime data
+  </Card>
+  <Card title="Database Setup" icon="database" href="/setup/database">
+    Review the database schema and RLS policies
+  </Card>
+</CardGroup>
+
+## Resources
+
+- [Supabase Auth Documentation](https://supabase.com/docs/guides/auth)
+- [OAuth Providers Setup](https://supabase.com/docs/guides/auth/social-login)
+- [Email Templates Guide](https://supabase.com/docs/guides/auth/auth-email-templates)
+- [Password Reset Flow](https://supabase.com/docs/guides/auth/auth-password-reset)

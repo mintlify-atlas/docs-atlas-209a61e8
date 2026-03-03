@@ -1,0 +1,296 @@
+---
+title: 'System Architecture'
+description: 'Comprehensive overview of AniDojo architecture, data flow, and system design'
+---
+
+## Overview
+
+AniDojo is built as a modern, full-stack web application using Next.js 15 with the App Router architecture. The system integrates multiple services to provide a seamless anime tracking and discovery experience.
+
+<CardGroup cols={2}>
+  <Card title="Frontend" icon="browser">
+    React 19 with Next.js 15 App Router for modern, performant UI
+  </Card>
+  <Card title="Backend" icon="database">
+    Supabase for authentication, database, and storage
+  </Card>
+  <Card title="External API" icon="globe">
+    Jikan API (MyAnimeList) for anime data and metadata
+  </Card>
+  <Card title="State Management" icon="brackets-curly">
+    Zustand for client-side state, React Context for auth
+  </Card>
+</CardGroup>
+
+## Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         Client Browser                          │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │           Next.js 15 App (React 19)                     │   │
+│  │  ┌──────────────────────────────────────────────────┐   │   │
+│  │  │  Components Layer                                │   │   │
+│  │  │  - Navbar, Modal, Search, Theme Toggle           │   │   │
+│  │  └──────────────────────────────────────────────────┘   │   │
+│  │  ┌──────────────────────────────────────────────────┐   │   │
+│  │  │  State Management                                │   │   │
+│  │  │  - AuthContext (React Context)                   │   │   │
+│  │  │  - ThemeContext (React Context)                  │   │   │
+│  │  │  - Zustand Stores                                │   │   │
+│  │  └──────────────────────────────────────────────────┘   │   │
+│  │  ┌──────────────────────────────────────────────────┐   │   │
+│  │  │  Service Layer                                   │   │   │
+│  │  │  - animeApi.ts (Jikan API with rate limiting)   │   │   │
+│  │  │  - supabase/client.ts                            │   │   │
+│  │  │  - supabase/queries.ts                           │   │   │
+│  │  └──────────────────────────────────────────────────┘   │   │
+│  └─────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ├──────────────┐
+                              │              │
+                              ▼              ▼
+           ┌──────────────────────────┐  ┌──────────────────┐
+           │   Supabase Backend       │  │   Jikan API      │
+           │  ┌────────────────────┐  │  │  (MyAnimeList)   │
+           │  │  Authentication    │  │  │                  │
+           │  │  - JWT tokens      │  │  │  REST API        │
+           │  │  - Session mgmt    │  │  │  - Anime data    │
+           │  └────────────────────┘  │  │  - Search        │
+           │  ┌────────────────────┐  │  │  - Metadata      │
+           │  │  PostgreSQL DB     │  │  │                  │
+           │  │  - Profiles        │  │  │  Rate Limiting:  │
+           │  │  - Anime entries   │  │  │  3 req/sec       │
+           │  │  - Reviews         │  │  │  with caching    │
+           │  │  - Custom lists    │  │  │                  │
+           │  └────────────────────┘  │  └──────────────────┘
+           │  ┌────────────────────┐  │
+           │  │  Storage           │  │
+           │  │  - User avatars    │  │
+           │  └────────────────────┘  │
+           └──────────────────────────┘
+```
+
+## Core Architectural Principles
+
+### 1. Server and Client Components
+
+AniDojo leverages Next.js 15's App Router architecture with a clear separation:
+
+<Accordion title="Server Components (Default)">
+  - Used for pages that fetch data server-side
+  - Better performance and SEO
+  - Direct database access via Supabase server client
+  - Examples: `/app/browse/page.tsx`, `/app/anime/[id]/page.tsx`
+</Accordion>
+
+<Accordion title="Client Components ('use client')">
+  - Used for interactive UI elements
+  - State management with hooks
+  - Event handlers and user interactions
+  - Examples: `Navbar.tsx`, `AuthContext.tsx`, `ThemeToggle.tsx`
+</Accordion>
+
+### 2. Data Flow Architecture
+
+```
+User Action → Component → Service Layer → External API/Database
+                ↓                              ↓
+           State Update  ←─────────────────  Response
+                ↓
+           UI Re-render
+```
+
+**Example: Adding Anime to List**
+
+1. User clicks "Add to List" button in `AddAnimeModal.tsx`
+2. Component calls `supabase/queries.ts` function
+3. Query function uses Supabase client to insert record
+4. Database updates via Supabase PostgreSQL
+5. Success response triggers UI update
+6. Component re-renders with updated state
+
+### 3. Authentication Flow
+
+<Note>
+  AniDojo uses Supabase Auth with JWT tokens for secure, stateless authentication.
+</Note>
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│ 1. User Sign In/Up                                             │
+│    ↓                                                            │
+│ 2. AuthContext.signIn() → Supabase Auth                        │
+│    ↓                                                            │
+│ 3. Supabase returns JWT token + session                        │
+│    ↓                                                            │
+│ 4. AuthContext loads user profile from database                │
+│    ↓                                                            │
+│ 5. User state stored in React Context                          │
+│    ↓                                                            │
+│ 6. Protected routes check isAuthenticated                      │
+│    ↓                                                            │
+│ 7. JWT token automatically included in API requests            │
+└────────────────────────────────────────────────────────────────┘
+```
+
+Key files:
+- `/src/contexts/AuthContext.tsx` - Auth state management
+- `/src/lib/supabase/client.ts` - Browser client
+- `/src/lib/supabase/server.ts` - Server-side client
+- `/src/lib/supabase/middleware.ts` - Session refresh
+
+### 4. API Integration Layer
+
+#### Jikan API (External)
+
+Custom rate-limited API client in `src/lib/animeApi.ts`:
+
+<Accordion title="Rate Limiting Strategy">
+  - Queue-based request management
+  - 350ms minimum interval between requests (~3 requests/second)
+  - Automatic retry with exponential backoff
+  - 5-minute response caching
+  - Prevents 429 (Too Many Requests) errors
+</Accordion>
+
+<Accordion title="API Functions">
+  - `searchAnime()` - Search anime by query
+  - `getTopAnime()` - Get top-rated anime
+  - `getAnimeById()` - Get detailed anime info
+  - `getCurrentSeasonAnime()` - Get seasonal anime
+  - `convertJikanToAnime()` - Transform API data to internal format
+</Accordion>
+
+#### Supabase Database Queries
+
+Structured query functions in `src/lib/supabase/queries.ts`:
+
+- User anime lists (CRUD operations)
+- Reviews and ratings
+- Custom lists
+- Profile management
+- Social features (votes, comments)
+
+## Design Patterns
+
+### Provider Pattern
+
+```tsx
+// src/components/Providers.tsx
+export function Providers({ children }) {
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        {children}
+      </AuthProvider>
+    </ThemeProvider>
+  )
+}
+```
+
+Centralized context providers for:
+- Authentication state (`AuthProvider`)
+- Theme management (`ThemeProvider`)
+- Global UI state (future: `UIProvider`)
+
+### Custom Hooks Pattern
+
+```tsx
+// src/hooks/useAnime.ts
+export function useAnime(id: number) {
+  // Encapsulates anime fetching logic
+  // Returns data, loading, and error states
+}
+```
+
+### Repository Pattern
+
+Database operations abstracted in query modules:
+
+```tsx
+// src/lib/supabase/queries.ts
+export async function addAnimeToList(entry: AnimeEntry) {
+  // Handles database insertion
+}
+
+export async function getUserAnimeList(userId: string) {
+  // Handles database query
+}
+```
+
+## Performance Optimizations
+
+<CardGroup cols={2}>
+  <Card title="Server-Side Rendering" icon="server">
+    Pages render on the server for faster initial load and better SEO
+  </Card>
+  <Card title="API Response Caching" icon="database">
+    5-minute cache for Jikan API responses reduces redundant requests
+  </Card>
+  <Card title="Image Optimization" icon="image">
+    Next.js Image component with remote patterns for CDN images
+  </Card>
+  <Card title="Code Splitting" icon="scissors">
+    Automatic route-based code splitting for smaller bundles
+  </Card>
+</CardGroup>
+
+## Security Considerations
+
+### Row Level Security (RLS)
+
+Supabase database uses RLS policies:
+- Users can only access their own data
+- Public data (profiles, published reviews) is readable by all
+- Write operations require authentication
+
+### Environment Variables
+
+Sensitive configuration stored in `.env.local`:
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+<Note>
+  The anon key is safe for client-side use. RLS policies enforce access control.
+</Note>
+
+### Authentication Security
+
+- JWT tokens with automatic refresh
+- Session-based authentication
+- Secure cookie storage
+- HTTPS-only in production
+
+## Scalability Considerations
+
+### Horizontal Scaling
+
+- Stateless Next.js application (can run multiple instances)
+- Supabase handles database scaling
+- CDN for static assets
+
+### Caching Strategy
+
+1. **Browser Cache**: Static assets cached by Next.js
+2. **API Cache**: In-memory cache for Jikan API responses
+3. **Database Query Cache**: Supabase connection pooling
+
+### Future Enhancements
+
+- Redis for distributed caching
+- Background job processing for heavy operations
+- Real-time subscriptions with Supabase Realtime
+- CDN integration for user-uploaded content
+
+## Related Documentation
+
+<CardGroup cols={2}>
+  <Card title="Tech Stack" icon="layer-group" href="/development/tech-stack">
+    Detailed breakdown of all technologies and versions
+  </Card>
+  <Card title="Project Structure" icon="folder-tree" href="/development/project-structure">
+    File organization and folder hierarchy
+  </Card>
+</CardGroup>

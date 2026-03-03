@@ -1,0 +1,479 @@
+---
+title: 'Reviews & Rating'
+description: 'Write detailed anime reviews with multi-dimensional ratings and share your opinions'
+icon: 'pen-to-square'
+---
+
+## Overview
+
+AniDojo's review system lets you write comprehensive anime reviews with detailed ratings across multiple categories. Share your thoughts with the community, help others discover great anime, and build your reviewer reputation.
+
+<Info>
+  Reviews are stored in Supabase and can be published publicly or saved as private drafts.
+</Info>
+
+## Review System
+
+<CardGroup cols={2}>
+  <Card title="Multi-Dimensional Ratings" icon="star">
+    Rate story, animation, sound, characters, and overall enjoyment separately
+  </Card>
+  <Card title="Rich Text Editor" icon="pen">
+    Write detailed reviews with formatting, lists, and structure
+  </Card>
+  <Card title="Pros & Cons" icon="list-check">
+    Highlight strengths and weaknesses for quick scanning
+  </Card>
+  <Card title="Spoiler Protection" icon="eye-slash">
+    Mark reviews as containing spoilers to warn readers
+  </Card>
+</CardGroup>
+
+## Writing a Review
+
+<Steps>
+  <Step title="Navigate to Anime Page">
+    Find the anime you want to review using search or your lists.
+  </Step>
+  
+  <Step title="Click Write Review">
+    Click the "Write Review" or "Review" button on the anime page.
+  </Step>
+  
+  <Step title="Add Overall Rating">
+    Rate the anime from 1-10 using the star selector:
+    
+    ```
+    1-2: Terrible
+    3-4: Poor
+    5-6: Average
+    7-8: Good
+    9-10: Excellent
+    ```
+    
+    <Tip>
+      Your overall rating is the most important metric. Be honest—it helps others and improves recommendations.
+    </Tip>
+  </Step>
+  
+  <Step title="Rate Individual Aspects">
+    Provide detailed ratings for:
+    
+    - **Story** (1-10): Plot, pacing, narrative structure
+    - **Animation** (1-10): Visual quality, art style, fluidity
+    - **Sound** (1-10): Music, voice acting, sound effects
+    - **Character** (1-10): Development, personality, relationships
+    - **Enjoyment** (1-10): Personal enjoyment factor
+    
+    <Note>
+      Individual ratings are optional but provide richer feedback. The overall rating is calculated as an average if you don't set it manually.
+    </Note>
+  </Step>
+  
+  <Step title="Write Review Title">
+    Create a compelling title that summarizes your opinion:
+    
+    Good examples:
+    - "A Masterpiece of Storytelling and Animation"
+    - "Great Concept, Disappointing Execution"
+    - "The Perfect Comfort Anime for Cozy Weekends"
+    
+    Keep it under 100 characters.
+  </Step>
+  
+  <Step title="Write Review Body">
+    Share your detailed thoughts:
+    
+    **Recommended structure**:
+    1. Opening hook (1-2 sentences)
+    2. Story summary (no spoilers)
+    3. What you liked
+    4. What could be improved
+    5. Who should watch this
+    6. Final verdict
+    
+    <Tip>
+      Aim for 200-500 words for a well-rounded review. Shorter reviews lack detail; longer reviews may lose readers.
+    </Tip>
+  </Step>
+  
+  <Step title="Add Pros and Cons (Optional)">
+    Create bullet-point lists:
+    
+    **Pros** (strengths):
+    - Compelling character arcs
+    - Stunning animation quality  
+    - Memorable soundtrack
+    
+    **Cons** (weaknesses):
+    - Slow pacing in middle episodes
+    - Predictable plot twists
+    - Weak supporting cast
+    
+    <Note>
+      Pros and cons appear as highlighted sections in your review, making it easy for readers to scan.
+    </Note>
+  </Step>
+  
+  <Step title="Set Review Metadata">
+    Configure additional options:
+    
+    - **Watch Status**: Completed, Watching, Dropped
+    - **Episodes Watched**: X out of Y total
+    - **Contains Spoilers**: Check if review reveals plot points
+    - **Tags**: Add relevant keywords (genre, themes, mood)
+    - **Recommendation**: Yes, Neutral, No
+  </Step>
+  
+  <Step title="Choose Status">
+    Save your review as:
+    
+    - **Published**: Live and visible to everyone
+    - **Draft**: Private and editable later
+    
+    <Tip>
+      Save as draft if you want to refine your thoughts before publishing. You can edit and publish anytime.
+    </Tip>
+  </Step>
+  
+  <Step title="Submit Review">
+    Click "Publish Review" or "Save Draft" to save your work.
+  </Step>
+</Steps>
+
+## Rating Categories Explained
+
+### Story Rating (1-10)
+
+Evaluate the narrative:
+- **Plot**: Is it engaging, original, well-structured?
+- **Pacing**: Does it move too fast/slow? Good balance?
+- **Themes**: Are themes explored meaningfully?
+- **Ending**: Satisfying conclusion? Loose ends?
+
+### Animation Rating (1-10)
+
+Assess visual quality:
+- **Art Style**: Unique, appealing, consistent?
+- **Fluidity**: Smooth movement in action scenes?
+- **Detail**: Background art, character designs?
+- **Direction**: Creative shot composition, cinematography?
+
+### Sound Rating (1-10)
+
+Rate audio elements:
+- **Music**: Memorable soundtrack? Fits the mood?
+- **Voice Acting**: Convincing performances?
+- **Sound Effects**: Immersive audio design?
+- **OP/ED**: Quality opening and ending themes?
+
+### Character Rating (1-10)
+
+Analyze the cast:
+- **Development**: Do characters grow and change?
+- **Personality**: Distinct, memorable characters?
+- **Relationships**: Believable interactions?
+- **Depth**: Motivations, backstories explored?
+
+### Enjoyment Rating (1-10)
+
+Your personal experience:
+- **Fun Factor**: Did you enjoy watching?
+- **Engagement**: Kept your attention?
+- **Emotional Impact**: Made you feel something?
+- **Rewatchability**: Would you watch again?
+
+<Tip>
+  Enjoyment is subjective! An anime can have technical flaws but still be highly enjoyable, or be well-made but not match your tastes.
+</Tip>
+
+## Review Examples
+
+### Example: Positive Review
+
+```markdown
+Title: "A Masterpiece That Redefines the Genre"
+
+Overall: 10/10
+Story: 10/10 | Animation: 10/10 | Sound: 9/10 | Character: 10/10 | Enjoyment: 10/10
+
+Attack on Titan completely exceeded my expectations from the first episode. 
+The story masterfully blends action, mystery, and political intrigue...
+
+**Pros:**
+- Unpredictable plot twists
+- Complex, morally gray characters
+- Stunning animation during action sequences
+- World-building that keeps expanding
+
+**Cons:**
+- Some pacing issues in Season 3
+- Dense exposition in later episodes
+
+**Recommendation:** Must-watch for any anime fan.
+```
+
+### Example: Mixed Review
+
+```markdown
+Title: "Great Visuals, Weak Story"
+
+Overall: 6/10  
+Story: 4/10 | Animation: 9/10 | Sound: 7/10 | Character: 5/10 | Enjoyment: 6/10
+
+While the animation is absolutely gorgeous, the story feels shallow and
+predictable. Characters lack depth beyond surface-level traits...
+
+**Pros:**
+- Breathtaking art style
+- Smooth, fluid animation
+- Great soundtrack
+
+**Cons:**
+- Predictable plot
+- One-dimensional characters  
+- Slow pacing
+
+**Recommendation:** Watch for the visuals, but don't expect a compelling story.
+```
+
+## Spoiler Guidelines
+
+<Warning>
+  Always mark reviews as containing spoilers if they reveal:
+  - Major plot points or twists
+  - Character deaths or fates
+  - Ending details
+  - Surprise reveals
+</Warning>
+
+### Spoiler-Free Writing Tips
+
+<Tip>
+  Instead of revealing plot details, describe the *type* of story:
+  - "A murder mystery with political undertones"
+  - "A coming-of-age story about friendship"
+  - "Dark fantasy with psychological horror elements"
+</Tip>
+
+You can discuss:
+- General themes and tone
+- Art style and animation quality
+- First few episodes (common knowledge)
+- Overall impressions
+- Comparisons to other anime
+
+Avoid revealing:
+- Plot twists or surprises
+- Character arcs and development
+- Relationship outcomes
+- Endings or conclusions
+
+## Managing Your Reviews
+
+### My Reviews Page
+
+Access all your reviews at `/my-reviews`:
+
+```typescript
+// From ~/workspace/source/src/app/my-reviews/page.tsx:29
+interface ReviewDisplay {
+  id: string;
+  animeTitle: string;
+  animeImage: string;
+  rating: number;
+  title: string;
+  body: string;
+  spoilers: boolean;
+  status: 'draft' | 'published';
+  helpful_votes: number;
+  created_at: string;
+  updated_at: string;
+}
+```
+
+Each review shows:
+- Anime thumbnail and title
+- Your review title
+- Rating (visual stars)
+- Publication date
+- Helpful votes (for published reviews)
+- Quick actions menu
+
+### Quick Actions
+
+<CardGroup cols={3}>
+  <Card title="Edit" icon="pen">
+    Modify your review text, ratings, or metadata
+  </Card>
+  <Card title="Share" icon="share-nodes">
+    Copy review link to share on social media
+  </Card>
+  <Card title="Delete" icon="trash">
+    Permanently remove the review
+  </Card>
+</CardGroup>
+
+<Warning>
+  Deleting a review is permanent and cannot be undone. Helpful votes and comments will be lost.
+</Warning>
+
+### Editing Reviews
+
+<Steps>
+  <Step title="Open Review">
+    Click "Edit" in the three-dot menu on your review.
+  </Step>
+  
+  <Step title="Make Changes">
+    Update any field: ratings, title, body, pros/cons, tags.
+  </Step>
+  
+  <Step title="Save">
+    Click "Update Review" to save changes.
+  </Step>
+</Steps>
+
+<Note>
+  Edited reviews show "Updated on [date]" to indicate modifications. Original publish date is preserved.
+</Note>
+
+## Review Visibility
+
+### Published Reviews
+
+When published, reviews appear:
+- On the anime's detail page
+- In your public profile
+- In community review feeds
+- In search results (if tagged correctly)
+
+### Draft Reviews
+
+Drafts are:
+- Only visible to you
+- Accessible in My Reviews
+- Editable anytime
+- Can be published when ready
+
+<Tip>
+  Use drafts to:
+  - Write reviews while watching (update as you progress)
+  - Save partial thoughts to finish later
+  - Get feedback before publishing
+</Tip>
+
+## Community Interaction
+
+### Helpful Votes
+
+Readers can mark reviews as helpful:
+- Upvote button appears on published reviews
+- Helpful count shown on review card
+- Top reviews sorted by helpful votes
+
+<Info>
+  Earning helpful votes builds your reviewer reputation and increases visibility of future reviews.
+</Info>
+
+### Comments (Coming Soon)
+
+Readers will be able to:
+- Comment on published reviews
+- Ask questions about your opinion
+- Discuss points raised
+- Thank you for the review
+
+### Review Reports
+
+Users can report inappropriate reviews:
+- Spam or irrelevant content
+- Abusive language
+- Unmarked spoilers
+- Off-topic discussions
+
+<Warning>
+  Repeated violations of review guidelines may result in review restrictions. Keep reviews respectful and on-topic.
+</Warning>
+
+## Review Tags
+
+Add tags to categorize your review:
+
+**Genre Tags**: Action, Romance, Comedy, Drama, Horror, Sci-Fi, Fantasy
+
+**Theme Tags**: Coming-of-age, Revenge, Friendship, War, School-life, Sports
+
+**Mood Tags**: Dark, Wholesome, Intense, Relaxing, Emotional, Funny
+
+**Audience Tags**: For beginners, For veterans, Family-friendly, Mature
+
+<Tip>
+  Tags help readers find reviews relevant to their interests. Use 3-5 tags per review for best discoverability.
+</Tip>
+
+## Review Statistics
+
+Track your reviewing activity:
+
+- **Total Reviews**: Count of published reviews
+- **Average Rating**: Your mean score across all reviews
+- **Most Reviewed Genre**: Top category you review
+- **Helpful Votes Received**: Total upvotes
+- **Review Streak**: Consecutive days writing reviews
+
+Stats appear on your profile page.
+
+## Best Practices
+
+<Tip>
+  **Be Specific**: Instead of "good animation," write "fluid fight choreography with creative camera angles."
+</Tip>
+
+<Tip>
+  **Explain Your Ratings**: Don't just say "7/10"—explain what made it a 7 instead of an 8 or 6.
+</Tip>
+
+<Tip>
+  **Consider Your Audience**: Who is this anime for? What should viewers expect?
+</Tip>
+
+<Tip>
+  **Balance Positives and Negatives**: Even great anime have flaws; even bad anime have redeeming qualities.
+</Tip>
+
+<Tip>
+  **Update Old Reviews**: Rewatching an anime? Update your review with fresh perspective.
+</Tip>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Build Your Lists" icon="list" href="/features/lists-tracking">
+    Add anime to your lists before reviewing
+  </Card>
+  <Card title="View Your Profile" icon="user" href="/features/user-profiles">
+    See all your published reviews in one place
+  </Card>
+  <Card title="Discover Anime" icon="compass" href="/features/anime-search">
+    Find anime to review next
+  </Card>
+  <Card title="AI Recommendations" icon="sparkles" href="/features/ai-discovery">
+    Get suggestions based on your ratings
+  </Card>
+</CardGroup>
+
+## Review Guidelines
+
+<Warning>
+  Reviews must follow community guidelines:
+  - No personal attacks or harassment
+  - No spam or self-promotion
+  - Mark spoilers appropriately
+  - Keep reviews relevant to the anime
+  - Use respectful language
+</Warning>
+
+<Info>
+  High-quality reviews earn badges like "Top Reviewer" and "Helpful Contributor" on your profile!
+</Info>
